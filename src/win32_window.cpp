@@ -7,6 +7,8 @@ static win32_window::key_fn key_func = nullptr;
 static int min_millis = 16;
 static int last_millis = 0;
 
+static bool paused = false;
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   switch (uMsg)
@@ -17,6 +19,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
   case WM_PAINT:
   {
+    if (paused)
+    {
+      return 0;
+    }
+    
+
     // only redraw if enough time has passed
     int current_millis = GetTickCount();
     if (current_millis - last_millis < min_millis)
@@ -72,6 +80,18 @@ void win32_window::set_key_fn(key_fn fn)
 void win32_window::set_target_fps(int fps)
 {
   min_millis = 1000 / fps;
+}
+
+void win32_window::set_paused(bool pause)
+{
+  paused = pause;
+
+  if (paused) SetWindowText(GetActiveWindow(), "(Paused)");
+}
+
+bool win32_window::is_paused()
+{
+  return paused;
 }
 
 bool win32_window::create_and_run(HINSTANCE hInstance, int nCmdShow)

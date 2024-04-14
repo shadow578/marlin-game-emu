@@ -14,6 +14,8 @@ namespace win32_window {
   void set_key_fn(key_fn fn);
 
   void set_target_fps(int fps);
+  void set_paused(bool paused);
+  bool is_paused();
 
   bool create_and_run(HINSTANCE hInstance, int nCmdShow);
 } // namespace win32_window

@@ -29,6 +29,9 @@ void key_fn(WPARAM key)
     case VK_SPACE:
         ui.did_click = true;
         break;
+    case VK_ESCAPE:
+        win32_window::set_paused(!win32_window::is_paused());
+        break;
     }
 }
 
