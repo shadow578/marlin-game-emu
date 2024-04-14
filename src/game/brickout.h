@@ -23,19 +23,16 @@
 
 #include "types.h"
 
-#define _BUZZ(D,F) 
+#define BRICK_ROWS   4
+#define BRICK_COLS  16
 
-#include "snake.h"
-#include "brickout.h"
-#include "invaders.h"
-#include "flappy.h"
+typedef struct {
+  uint8_t balls_left, brick_count;
+  uint16_t bricks[BRICK_ROWS];
+  int8_t paddle_x, hit_dir;
+  fixed_t ballx, bally, ballh, ballv;
+} brickout_data_t;
 
-// Pool game data to save SRAM
-union MarlinGameData {
-  snake_data_t snake;
-  brickout_data_t brickout;
-  invaders_data_t invaders;
-  flappy_data_t flappy;
-};
+class BrickoutGame : MarlinGame { public: static void enter_game(), game_screen(); };
 
-extern MarlinGameData marlin_game_data;
+extern BrickoutGame brickout;

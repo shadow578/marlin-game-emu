@@ -15,9 +15,25 @@ typedef void (*screenFunc_t)(void);
 #define PAGE_CONTAINS(a, b) true
 #define PAGE_UNDER(a) true
 
+#define PROGMEM
+
 #define _MIN(a, b) ((a) < (b) ? (a) : (b))
 #define _MAX(a, b) ((a) > (b) ? (a) : (b))
 #define WITHIN(x, a, b) ((x) >= (a) && (x) <= (b))
+
+#define constrain(x, a, b) _MIN(_MAX(x, a), b)
+
+typedef const char* PGM_P;
+#define PSTR(s) s
+
+#define TEST(x, b) ((x) & (1 << (b)))
+
+#define LIMIT(x, a, b) _MIN(_MAX(x, a), b)
+
+#define _BV(b) (1 << (b))
+
+#define COUNT(a) (sizeof(a) / sizeof(a[0]))
+
 
 #define F(s) s
 
@@ -53,6 +69,8 @@ public:
 
     return false;
   }
+
+  bool button_pressed() { return did_click; }
 
 private:
   screenFunc_t current_screen = nullptr;
