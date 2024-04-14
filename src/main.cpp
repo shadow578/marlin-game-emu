@@ -36,7 +36,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     goto_menu_screen();
 
-    win32_window::set_target_fps(15);
+    win32_window::set_target_fps(30);
     win32_window::set_draw_fn(draw_fn);
     win32_window::set_key_fn(key_fn);
     if (!win32_window::create_and_run(hInstance, nCmdShow))
