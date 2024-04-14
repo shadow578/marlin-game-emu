@@ -1,6 +1,7 @@
 #include "win32_window.h"
 
 static win32_window::draw_fn draw_func = nullptr;
+static win32_window::key_fn key_func = nullptr;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -22,6 +23,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return 0;
   }
 
+  case WM_KEYDOWN:
+    key_func(wParam);
+    break;
+
   case WM_TIMER:
   {
     // Timer triggered, redraw the window
@@ -37,6 +42,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 void win32_window::set_draw_fn(draw_fn fn)
 {
   draw_func = fn;
+}
+
+void win32_window::set_key_fn(key_fn fn)
+{
+  key_func = fn;
 }
 
 bool win32_window::create_and_run(HINSTANCE hInstance, int nCmdShow)

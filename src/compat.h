@@ -20,17 +20,20 @@ typedef void (*screenFunc_t)(void);
 
 #define F(s) s
 
-inline int random(int min, int max) {
+inline int random(int min, int max)
+{
   return min + rand() % (max - min);
 }
 
-class UiCompat {
+class UiCompat
+{
 public:
   void draw() { current_screen(); }
 
 public:
   bool first_page = true;
   int encoderPosition = 0;
+  bool did_click = false;
 
   void refresh(int ignored) {}
   bool get_blink() { return true; }
@@ -39,11 +42,19 @@ public:
   void goto_previous_screen_no_defer() {}
 
   void goto_screen(screenFunc_t screen) { current_screen = screen; }
-  bool use_click() { return false; }
+  bool use_click()
+  {
+    if (did_click)
+    {
+      did_click = false;
+      return true;
+    }
+
+    return false;
+  }
 
 private:
   screenFunc_t current_screen = nullptr;
 };
 
 extern UiCompat ui;
-
