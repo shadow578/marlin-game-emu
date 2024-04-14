@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdlib>
+#include <windows.h>
 
 #define GAME_FONT_WIDTH 6
 #define GAME_FONT_ASCENT 8

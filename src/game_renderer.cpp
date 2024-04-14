@@ -2,7 +2,7 @@
 #include "compat.h"
 #include "iostream"
 
-constexpr bool debug = true;
+constexpr bool debug = false;
 #define I(x) static_cast<int>(x)
 
 int color = 0;
@@ -25,9 +25,9 @@ void set_hdc(HDC the_hdc)
 
 void GameRenderer::frame_start()
 {
-  // draw full size rectangle in white
+  // draw full size rectangle in black
   int prev_color = color;
-  color = 1;
+  color = 0;
 
   draw_box(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
@@ -49,7 +49,7 @@ void GameRenderer::frame_end()
 
 void GameRenderer::set_color(const uint8_t c)
 {
-  color = !c;
+  color = c;
 }
 
 void GameRenderer::draw_hline(const game_dim_t x, const game_dim_t y, const game_dim_t w)
@@ -79,15 +79,11 @@ void GameRenderer::draw_frame(const game_dim_t x, const game_dim_t y, const game
     std::cout << "frame @ " << I(x) << "," << I(y) << "; w=" << I(w) << ", h=" << I(h) << std::endl;
   }
 
-  RECT rect = {
-      .left = game_to_screen(x),
-      .top = game_to_screen(y),
-      .right = game_to_screen(w) + game_to_screen(x),
-      .bottom = game_to_screen(h) + game_to_screen(y),
-  };
-  HBRUSH brush = CreateSolidBrush(color == 0 ? RGB(0, 0, 0) : RGB(255, 255, 255));
-  FrameRect(hdc, &rect, brush);
-  DeleteObject(brush);
+  // draw as a series of lines
+  draw_hline(x, y, w);
+  draw_hline(x, y + h, w);
+  draw_vline(x, y, h);
+  draw_vline(x + w, y, h);
 }
 
 void GameRenderer::draw_box(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
@@ -152,6 +148,15 @@ int GameRenderer::draw_string(const game_dim_t x, const game_dim_t y, const char
   {
     std::cout << "string @ " << I(x) << "," << I(y) << ": '" << str << "'" << std::endl;
   }
+
+  auto re = RECT{
+      .left = game_to_screen(x),
+      .top = game_to_screen(y),
+      .right = game_to_screen(GAME_WIDTH),
+      .bottom = game_to_screen(GAME_HEIGHT),
+  };
+
+  DrawText(hdc, str, -1, &re, DT_LEFT | DT_TOP | DT_SINGLELINE);
 }
 
 void GameRenderer::draw_int(const game_dim_t x, const game_dim_t y, const int value)
@@ -160,4 +165,8 @@ void GameRenderer::draw_int(const game_dim_t x, const game_dim_t y, const int va
   {
     std::cout << "int @ " << I(x) << "," << I(y) << ": " << value << std::endl;
   }
+
+  char buffer[32];
+  snprintf(buffer, sizeof(buffer), "%d", value);
+  draw_string(x, y, buffer);
 }

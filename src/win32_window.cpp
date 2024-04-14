@@ -3,6 +3,9 @@
 static win32_window::draw_fn draw_func = nullptr;
 static win32_window::key_fn key_func = nullptr;
 
+static int min_millis = 16;
+static int last_millis = 0;
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   switch (uMsg)
@@ -13,6 +16,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
   case WM_PAINT:
   {
+    // only redraw if enough time has passed
+    int current_millis = GetTickCount();
+    if (current_millis - last_millis < min_millis)
+    {
+      return 0;
+    }
+    last_millis = current_millis;
+
+    // paint the window
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
 
@@ -47,6 +59,11 @@ void win32_window::set_draw_fn(draw_fn fn)
 void win32_window::set_key_fn(key_fn fn)
 {
   key_func = fn;
+}
+
+void win32_window::set_target_fps(int fps)
+{
+  min_millis = 1000 / fps;
 }
 
 bool win32_window::create_and_run(HINSTANCE hInstance, int nCmdShow)
@@ -85,7 +102,7 @@ bool win32_window::create_and_run(HINSTANCE hInstance, int nCmdShow)
   ShowWindow(hwnd, nCmdShow);
 
   // Set up a timer for continuous redraw
-  SetTimer(hwnd, 10, 100, NULL);
+  SetTimer(hwnd, 10, 1, NULL);
 
   // Run the message loop
   MSG msg = {};
