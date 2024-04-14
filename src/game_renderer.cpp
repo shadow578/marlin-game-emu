@@ -130,7 +130,7 @@ void GameRenderer::draw_bitmapP(const game_dim_t x, const game_dim_t y, const ga
     for (game_dim_t col = 0; col < bytes_per_row; col++)
     {
       const uint8_t byte = bitmap[(row * bytes_per_row) + col];
-      for (uint8_t bit = 0; bit < 7; bit++)
+      for (uint8_t bit = 0; bit < 8; bit++)
       {
         // assume that the screen area is cleared before drawing
         if (byte & (1 << bit))
