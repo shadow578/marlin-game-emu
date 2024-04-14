@@ -4,16 +4,15 @@
 #include "game_renderer.h"
 #include "game/game.h"
 
+void goto_menu_screen()
+{
+    menu.enter_game();
+}
+
 void draw_fn(HDC hdc)
 {
-    int frame_start_ms = GetTickCount();
-
     set_hdc(hdc);
     ui.draw();
-
-    int frame_end_ms = GetTickCount();
-    int frame_time_ms = frame_end_ms - frame_start_ms;
-    std::cout << "Frame time: " << frame_time_ms << "ms" << std::endl;
 }
 
 void key_fn(WPARAM key)
@@ -35,7 +34,7 @@ void key_fn(WPARAM key)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    snake.enter_game();
+    goto_menu_screen();
 
     win32_window::set_target_fps(15);
     win32_window::set_draw_fn(draw_fn);

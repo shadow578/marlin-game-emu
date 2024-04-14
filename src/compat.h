@@ -7,6 +7,8 @@
 #define GAME_WIDTH 100
 #define GAME_HEIGHT 100
 
+#define _BUZZ(D,F)
+
 typedef long millis_t;
 typedef void (*screenFunc_t)(void);
 
@@ -23,7 +25,7 @@ typedef void (*screenFunc_t)(void);
 
 #define constrain(x, a, b) _MIN(_MAX(x, a), b)
 
-typedef const char* PGM_P;
+typedef const char *PGM_P;
 #define PSTR(s) s
 
 #define TEST(x, b) ((x) & (1 << (b)))
@@ -34,13 +36,14 @@ typedef const char* PGM_P;
 
 #define COUNT(a) (sizeof(a) / sizeof(a[0]))
 
-
 #define F(s) s
 
 inline int random(int min, int max)
 {
   return min + rand() % (max - min);
 }
+
+extern void goto_menu_screen();
 
 class UiCompat
 {
@@ -56,9 +59,13 @@ public:
   bool get_blink() { return true; }
 
   void defer_status_screen() {}
-  void goto_previous_screen_no_defer() {}
+  void goto_previous_screen_no_defer() { goto_menu_screen();  }
 
-  void goto_screen(screenFunc_t screen) { current_screen = screen; }
+  void goto_screen(screenFunc_t screen)
+  {
+    current_screen = screen;
+  }
+
   bool use_click()
   {
     if (did_click)

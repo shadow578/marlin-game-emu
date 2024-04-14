@@ -1,4 +1,5 @@
 #include "win32_window.h"
+#include <stdio.h>
 
 static win32_window::draw_fn draw_func = nullptr;
 static win32_window::key_fn key_func = nullptr;
@@ -22,6 +23,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
       return 0;
     }
+
+    // calculate and show FPS
+    int fps = 1000 / (current_millis - last_millis);
+    char fps_str[32];
+    sprintf(fps_str, "FPS: %d", fps);
+    SetWindowText(hwnd, fps_str);
+
     last_millis = current_millis;
 
     // paint the window

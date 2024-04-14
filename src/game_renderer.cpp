@@ -81,9 +81,9 @@ void GameRenderer::draw_frame(const game_dim_t x, const game_dim_t y, const game
 
   // draw as a series of lines
   draw_hline(x, y, w);
-  draw_hline(x, y + h, w);
+  draw_hline(x, y + h - 1, w);
   draw_vline(x, y, h);
-  draw_vline(x + w, y, h);
+  draw_vline(x + w - 1, y, h);
 }
 
 void GameRenderer::draw_box(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
@@ -156,6 +156,7 @@ int GameRenderer::draw_string(const game_dim_t x, const game_dim_t y, const char
       .bottom = game_to_screen(GAME_HEIGHT),
   };
 
+  SetTextColor(hdc, color == 0 ? RGB(255, 255, 255) : RGB(0, 0, 0));
   DrawText(hdc, str, -1, &re, DT_LEFT | DT_TOP | DT_SINGLELINE);
 }
 

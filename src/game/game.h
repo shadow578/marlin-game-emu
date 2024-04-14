@@ -23,12 +23,11 @@
 
 #include "types.h"
 
-#define _BUZZ(D,F) 
-
 #include "snake.h"
 #include "brickout.h"
 #include "invaders.h"
 #include "flappy.h"
+#include "../menu.h"
 
 // Pool game data to save SRAM
 union MarlinGameData {
