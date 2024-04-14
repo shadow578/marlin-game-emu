@@ -1,17 +1,17 @@
 #include <iostream>
 #include "win32_window.h"
+#include "compat.h"
+#include "game_renderer.h"
+#include "game/game.h"
 
 void draw_fn(HDC hdc) {
-    std::cout << "Drawing" << std::endl;
-
-    // Draw a red rectangle
-    RECT rect = {10, 10, 100, 100};
-    HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0));
-    FillRect(hdc, &rect, brush);
-    DeleteObject(brush);
+    set_hdc(hdc);
+    ui.draw();
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    snake.enter_game();
+
     win32_window::set_draw_fn(draw_fn);
     if (!win32_window::create_and_run(hInstance, nCmdShow)) {
         std::cerr << "Failed to create window" << std::endl;

@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdlib>
 
-#define GAME_FONT_WIDTH 5
+#define GAME_FONT_WIDTH 6
 #define GAME_FONT_ASCENT 8
-#define GAME_WIDTH 128
-#define GAME_HEIGHT 64
+#define GAME_WIDTH 100
+#define GAME_HEIGHT 100
 
 typedef long millis_t;
 typedef void (*screenFunc_t)(void);

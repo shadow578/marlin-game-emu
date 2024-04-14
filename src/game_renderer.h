@@ -1,9 +1,8 @@
 #pragma once
 #include "game/renderer.h"
+#include <windows.h>
 
-constexpr float SCALE = 2.0f;
+typedef int screen_dim_t;
+constexpr int SCALE = 4;
 
-/**
- * @brief initialize win32 game renderer 
- */
-void GameRenderer_init();
+void set_hdc(HDC hdc);
