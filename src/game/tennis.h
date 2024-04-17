@@ -95,12 +95,20 @@ namespace tennis_game
      * @brief Called when the player or opponent scores
      * @param player true if the player scored, false if the opponent scored 
      */
-    static void on_score(const bool player);
+    static void do_score(const bool player);
 
     /**
-     * @brief Called every time the ball bounces off something 
+     * @brief Called when the player or opponent does a trickshot
+     * @param top_edge true if ball hit paddle top edge, false if bottom edge
+     * @param player true if player, false if opponent 
      */
-    static void on_bounce();
+    static void do_trickshot(const bool top_edge, const bool player);
+
+    /**
+     * @brief Called every time the ball bounces off something
+     * @param paddle true if the ball bounced off a paddle, false if it bounced off the top or bottom of the play area
+     */
+    static void do_bounce(const bool paddle);
 
     /**
      * @brief Draw the ball 

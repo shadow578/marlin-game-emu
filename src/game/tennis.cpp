@@ -70,6 +70,12 @@ constexpr game_dim_t opponent_paddle_x = GAME_WIDTH - paddle_wall_distance - pad
 // |-//-----------//-|
 constexpr game_dim_t ball_size = 2;
 
+
+// Trickshot:
+constexpr fixed_t trickshot_edge_distance = FTOF(paddle_height / 6.0f);
+constexpr fixed_t trickshot_x_magnitude = FTOF(0.2f);
+constexpr fixed_t trickshot_y_magnitude = FTOF(0.2f);
+
 void TennisGame::enter_game()
 {
   init_game(1, game_screen);
@@ -90,7 +96,7 @@ void TennisGame::game_screen()
       // did the ball go out?
       if (ball_outcome != 0)
       {
-        on_score(ball_outcome == 1);
+        do_score(ball_outcome == 1);
       }
 
     } while (0);
@@ -168,8 +174,7 @@ uint8_t TennisGame::update_ball()
   if (new_y < 0 || new_y > BTOF(GAME_HEIGHT))
   {
     // yes, bounce off boards
-    state.ball.y_velocity = -state.ball.y_velocity;
-    on_bounce();
+    do_bounce(false);
   }
 
   // is x at the player's paddle?
@@ -178,13 +183,20 @@ uint8_t TennisGame::update_ball()
   if (new_x >= player_paddle_left && new_x <= player_paddle_right)
   {
     // yes, but is y at the paddle?
-    const fixed_t paddle_top = BTOF(state.player.y + ball_size);
-    const fixed_t paddle_bottom = BTOF(state.player.y - paddle_height - ball_size);
+    const fixed_t paddle_top = BTOF(state.player.y);
+    const fixed_t paddle_bottom = BTOF(state.player.y - paddle_height);
     if (new_y <= paddle_top && new_y >= paddle_bottom)
     {
       // yes, bounce off paddle
-      state.ball.x_velocity = -state.ball.x_velocity;
-      on_bounce();
+      do_bounce(true);
+
+      // if near the top or bottom of the paddle, do a trickshot
+      const bool top_edge = new_y > (paddle_top - trickshot_edge_distance);
+      const bool bottom_edge = new_y < (paddle_bottom + trickshot_edge_distance);
+      if (top_edge || bottom_edge)
+      {
+        do_trickshot(top_edge, true);
+      }
     }
   }
 
@@ -194,13 +206,20 @@ uint8_t TennisGame::update_ball()
   if (new_x >= opponent_paddle_left && new_x <= opponent_paddle_right)
   {
     // yes, but is y at the paddle?
-    const fixed_t paddle_top = BTOF(state.opponent.y + ball_size);
-    const fixed_t paddle_bottom = BTOF(state.opponent.y - paddle_height - ball_size);
+    const fixed_t paddle_top = BTOF(state.opponent.y);
+    const fixed_t paddle_bottom = BTOF(state.opponent.y - paddle_height);
     if (new_y <= paddle_top && new_y >= paddle_bottom)
     {
       // yes, bounce off paddle
-      state.ball.x_velocity = -state.ball.x_velocity;
-      on_bounce();
+      do_bounce(true);
+
+      // if near the top or bottom of the paddle, do a trickshot
+      const bool top_edge = new_y > (paddle_top - trickshot_edge_distance);
+      const bool bottom_edge = new_y < (paddle_bottom + trickshot_edge_distance);
+      if (top_edge || bottom_edge)
+      {
+        do_trickshot(top_edge, false);
+      }
     }
   }
 
@@ -224,7 +243,7 @@ uint8_t TennisGame::update_ball()
   return 0;
 }
 
-void TennisGame::on_score(const bool player)
+void TennisGame::do_score(const bool player)
 {
   if (player)
   {
@@ -238,9 +257,29 @@ void TennisGame::on_score(const bool player)
   reset_ball();
 }
 
-void TennisGame::on_bounce()
+void TennisGame::do_trickshot(const bool top_edge, const bool player)
+{
+  const fixed_t x_magnitude = (random(1, 10) * trickshot_x_magnitude) / 10; // 0.1 * N to 1.0 * N
+  const fixed_t y_magnitude = (random(1, 10) * trickshot_y_magnitude) / 10; // "
+
+  state.ball.x_velocity += player ? x_magnitude : -x_magnitude;
+  state.ball.y_velocity += top_edge ? y_magnitude : -y_magnitude;
+}
+
+void TennisGame::do_bounce(const bool paddle)
 {
   _BUZZ(5, 280);
+
+  if (paddle)
+  {
+    // paddle bounce
+    state.ball.x_velocity = -state.ball.x_velocity;
+  }
+  else
+  {
+    // board bounce
+    state.ball.y_velocity = -state.ball.y_velocity;
+  }
 }
 
 void TennisGame::draw_ball()
