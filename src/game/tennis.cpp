@@ -131,8 +131,14 @@ void TennisGame::update_player() {
 }
 
 void TennisGame::update_opponent() {
-  // TODO: implement opponent
-  state.opponent.y = state.ball.y;
+  // opponent follows the ball
+  if (state.ball.y < state.opponent.y) {
+    state.opponent.y -= paddle_velocity;
+  } else if (state.ball.y > state.opponent.y) {
+    state.opponent.y += paddle_velocity;
+  }
+
+  state.opponent.y = constrain(state.opponent.y, 0, GAME_HEIGHT - paddle_height);
 }
 
 uint8_t TennisGame::update_ball() {
