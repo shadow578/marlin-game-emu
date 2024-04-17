@@ -1,11 +1,15 @@
 #pragma once
+#include <stdint.h>
 #include <cstdlib>
 #include <windows.h>
 
 #define GAME_FONT_WIDTH 6
 #define GAME_FONT_ASCENT 8
-#define GAME_WIDTH 100
-#define GAME_HEIGHT 100
+#define GAME_WIDTH 128
+#define GAME_HEIGHT 64
+
+typedef uint8_t game_dim_t;
+typedef const uint8_t* pgm_bitmap_t;
 
 #define _BUZZ(D,F)
 

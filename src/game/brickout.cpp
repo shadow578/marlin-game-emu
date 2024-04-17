@@ -132,33 +132,42 @@ void BrickoutGame::game_screen() {
     } while (false);
   }
 
-  screen.frame_start();
-  screen.set_color(1);
+  frame_start();
 
-  // Draw bricks
+  // Draw bricks, cycling through colors for each brick
+  const color brick_colors[] = { color::RED, color::CYAN, color::GREEN, color::YELLOW, color::MAGENTA, color::BLUE };
+  int color_index = 0;
   if (PAGE_CONTAINS(BRICK_TOP, BRICK_BOT)) {
     for (uint8_t y = 0; y < BRICK_ROWS; ++y) {
       const uint8_t yy = y * BRICK_H + BRICK_TOP;
       if (PAGE_CONTAINS(yy, yy + BRICK_H - 1)) {
         for (uint8_t x = 0; x < BRICK_COLS; ++x) {
+          // cycle through colors, even if the brick is gone
+          // otherwise, bricks would change color if their neighbor is hit
+          set_color(brick_colors[color_index++ % COUNT(brick_colors)]);
+
+          // draw brick if it's still there
           if (TEST(bdat.bricks[y], x)) {
             const uint8_t xx = x * BRICK_W;
             for (uint8_t v = 0; v < BRICK_H - 1; ++v)
               if (PAGE_CONTAINS(yy + v, yy + v))
-                screen.draw_hline(xx, yy + v, BRICK_W - 1);
+                draw_hline(xx, yy + v, BRICK_W - 1);
           }
         }
       }
     }
   }
 
+  // everything else is white
+  set_color(color::WHITE);
+
   // Draw paddle
   if (PAGE_CONTAINS(PADDLE_Y-1, PADDLE_Y)) {
-    screen.draw_hline(bdat.paddle_x, PADDLE_Y, PADDLE_W);
+    draw_hline(bdat.paddle_x, PADDLE_Y, PADDLE_W);
     #if PADDLE_H > 1
-      screen.draw_hline(bdat.paddle_x, PADDLE_Y-1, PADDLE_W);
+      draw_hline(bdat.paddle_x, PADDLE_Y-1, PADDLE_W);
       #if PADDLE_H > 2
-        screen.draw_hline(bdat.paddle_x, PADDLE_Y-2, PADDLE_W);
+        draw_hline(bdat.paddle_x, PADDLE_Y-2, PADDLE_W);
       #endif
     #endif
   }
@@ -167,7 +176,7 @@ void BrickoutGame::game_screen() {
   if (game_state) {
     const uint8_t by = FTOB(bdat.bally);
     if (PAGE_CONTAINS(by, by+1))
-      screen.draw_frame(FTOB(bdat.ballx), by, 2, 2);
+      draw_frame(FTOB(bdat.ballx), by, 2, 2);
   }
   // Or draw GAME OVER
   else
@@ -177,14 +186,14 @@ void BrickoutGame::game_screen() {
     // Score Digits
     //const uint8_t sx = (GAME_WIDTH - (score >= 10 ? score >= 100 ? score >= 1000 ? 4 : 3 : 2 : 1) * GAME_FONT_WIDTH) / 2;
     constexpr uint8_t sx = 0;
-    screen.draw_int(sx, GAME_FONT_ASCENT - 1, score);
+    draw_int(sx, GAME_FONT_ASCENT - 1, score);
 
     // Balls Left
     PGM_P const ohs = PSTR("ooo\0\0");
-    screen.draw_string(GAME_WIDTH - GAME_FONT_WIDTH * 3, GAME_FONT_ASCENT - 1, ohs + 3 - bdat.balls_left);
+    draw_string(GAME_WIDTH - GAME_FONT_WIDTH * 3, GAME_FONT_ASCENT - 1, ohs + 3 - bdat.balls_left);
   }
 
-  screen.frame_end();
+  frame_end();
 
   // A click always exits this game
   if (ui.use_click()) exit_game();

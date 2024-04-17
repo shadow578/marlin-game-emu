@@ -5,7 +5,7 @@
 constexpr bool debug = false;
 #define I(x) static_cast<int>(x)
 
-int color = 0;
+COLORREF current_color = RGB(0, 0, 0);
 static HDC hdc;
 
 constexpr game_dim_t screen_to_game(const screen_dim_t x)
@@ -23,15 +23,15 @@ void set_hdc(HDC the_hdc)
   hdc = the_hdc;
 }
 
-void GameRenderer::frame_start()
+void MarlinGame::frame_start()
 {
   // draw full size rectangle in black
-  int prev_color = color;
-  color = 0;
+  const auto prev_color = current_color;
+  current_color = RGB(0, 0, 0);
 
   draw_box(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-  color = prev_color;
+  current_color = prev_color;
 
   if (debug)
   {
@@ -39,7 +39,7 @@ void GameRenderer::frame_start()
   }
 }
 
-void GameRenderer::frame_end()
+void MarlinGame::frame_end()
 {
   if (debug)
   {
@@ -47,12 +47,41 @@ void GameRenderer::frame_end()
   }
 }
 
-void GameRenderer::set_color(const uint8_t c)
+void MarlinGame::set_color(const color c)
 {
-  color = c;
+switch(c)
+  {
+    case color::BLACK:
+      current_color = RGB(0,0,0);
+      break;
+    case color::WHITE:
+    default:
+      current_color = RGB(0xff, 0xff, 0xff);
+      break;
+
+    // https://rgbcolorpicker.com/565/table
+    case color::RED:
+      current_color = RGB(0xFF, 0x00, 0x00);
+      break;
+    case color::GREEN:
+      current_color = RGB(0x00, 0xFF, 0x00);
+      break;
+    case color::BLUE:
+      current_color = RGB(0x00, 0x00, 0xFF);
+      break;
+    case color::YELLOW:
+      current_color = RGB(0xFF, 0xFF, 0x00);
+      break;
+    case color::CYAN:
+      current_color = RGB(0x00, 0xFF, 0xFF);
+      break;
+    case color::MAGENTA:
+      current_color = RGB(0xFF, 0x00, 0xFF);
+      break;
+  }
 }
 
-void GameRenderer::draw_hline(const game_dim_t x, const game_dim_t y, const game_dim_t w)
+void MarlinGame::draw_hline(const game_dim_t x, const game_dim_t y, const game_dim_t w)
 {
   if (debug)
   {
@@ -62,7 +91,7 @@ void GameRenderer::draw_hline(const game_dim_t x, const game_dim_t y, const game
   draw_box(x, y, w, 1);
 }
 
-void GameRenderer::draw_vline(const game_dim_t x, const game_dim_t y, const game_dim_t h)
+void MarlinGame::draw_vline(const game_dim_t x, const game_dim_t y, const game_dim_t h)
 {
   if (debug)
   {
@@ -72,7 +101,7 @@ void GameRenderer::draw_vline(const game_dim_t x, const game_dim_t y, const game
   draw_box(x, y, 1, h);
 }
 
-void GameRenderer::draw_frame(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
+void MarlinGame::draw_frame(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
 {
   if (debug)
   {
@@ -86,7 +115,7 @@ void GameRenderer::draw_frame(const game_dim_t x, const game_dim_t y, const game
   draw_vline(x + w - 1, y, h);
 }
 
-void GameRenderer::draw_box(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
+void MarlinGame::draw_box(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
 {
   if (debug)
   {
@@ -99,12 +128,12 @@ void GameRenderer::draw_box(const game_dim_t x, const game_dim_t y, const game_d
       .right = game_to_screen(w) + game_to_screen(x),
       .bottom = game_to_screen(h) + game_to_screen(y),
   };
-  HBRUSH brush = CreateSolidBrush(color == 0 ? RGB(0, 0, 0) : RGB(255, 255, 255));
+  HBRUSH brush = CreateSolidBrush(current_color);
   FillRect(hdc, &rect, brush);
   DeleteObject(brush);
 }
 
-void GameRenderer::draw_pixel(const game_dim_t x, const game_dim_t y)
+void MarlinGame::draw_pixel(const game_dim_t x, const game_dim_t y)
 {
   if (debug)
   {
@@ -114,7 +143,7 @@ void GameRenderer::draw_pixel(const game_dim_t x, const game_dim_t y)
   draw_box(x, y, 1, 1);
 }
 
-void GameRenderer::draw_bitmapP(const game_dim_t x, const game_dim_t y, const game_dim_t bytes_per_row, const game_dim_t rows, const pgm_bitmap_t bitmap)
+void MarlinGame::draw_bitmap(const game_dim_t x, const game_dim_t y, const game_dim_t bytes_per_row, const game_dim_t rows, const pgm_bitmap_t bitmap)
 {
   if (debug)
   {
@@ -142,7 +171,7 @@ void GameRenderer::draw_bitmapP(const game_dim_t x, const game_dim_t y, const ga
   }
 }
 
-int GameRenderer::draw_string(const game_dim_t x, const game_dim_t y, const char *str)
+int MarlinGame::draw_string(const game_dim_t x, const game_dim_t y, const char *str)
 {
   if (debug)
   {
@@ -156,11 +185,11 @@ int GameRenderer::draw_string(const game_dim_t x, const game_dim_t y, const char
       .bottom = game_to_screen(GAME_HEIGHT),
   };
 
-  SetTextColor(hdc, color == 0 ? RGB(255, 255, 255) : RGB(0, 0, 0));
+  SetTextColor(hdc, current_color);
   DrawText(hdc, str, -1, &re, DT_LEFT | DT_TOP | DT_SINGLELINE);
 }
 
-void GameRenderer::draw_int(const game_dim_t x, const game_dim_t y, const int value)
+void MarlinGame::draw_int(const game_dim_t x, const game_dim_t y, const int value)
 {
   if (debug)
   {

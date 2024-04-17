@@ -1,5 +1,5 @@
 #pragma once
-#include "game/renderer.h"
+#include "game/types.h"
 #include <windows.h>
 
 typedef int screen_dim_t;

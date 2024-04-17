@@ -47,8 +47,8 @@ void MenuGame::game_screen()
       }
     } while (0);
 
-  screen.frame_start();
-  screen.set_color(1);
+  frame_start();
+  set_color(color::WHITE);
 
   for (int i = 0; i < num_games; i++)
   {
@@ -56,14 +56,14 @@ void MenuGame::game_screen()
 
     if (is_selected)
     {
-      screen.draw_box(5, i * 15, 10, 10);
+      draw_box(5, i * 15, 10, 10);
     }
     else
     {
-      screen.draw_frame(5, i * 15, 10, 10);
+      draw_frame(5, i * 15, 10, 10);
     }
-    screen.draw_string(20, (i * 15) + 5, games[i].name);
+    draw_string(20, (i * 15) + 5, games[i].name);
   }
 
-  screen.frame_end();
+  frame_end();
 }
