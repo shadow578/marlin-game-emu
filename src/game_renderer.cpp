@@ -5,6 +5,7 @@
 constexpr bool debug = false;
 #define I(x) static_cast<int>(x)
 
+bool color_enable = true;
 COLORREF current_color = RGB(0, 0, 0);
 static HDC hdc;
 
@@ -21,6 +22,16 @@ constexpr screen_dim_t game_to_screen(const game_dim_t x)
 void set_hdc(HDC the_hdc)
 {
   hdc = the_hdc;
+}
+
+void set_color_enabled(const bool enabled)
+{
+  color_enable = enabled;
+}
+
+bool get_color_enabled()
+{
+  return color_enable;
 }
 
 void MarlinGame::frame_start()
@@ -49,8 +60,10 @@ void MarlinGame::frame_end()
 
 void MarlinGame::set_color(const color c)
 {
-switch(c)
+  if (color_enable)
   {
+    switch(c)
+    {
     case color::BLACK:
       current_color = RGB(0,0,0);
       break;
@@ -78,6 +91,18 @@ switch(c)
     case color::MAGENTA:
       current_color = RGB(0xFF, 0x00, 0xFF);
       break;
+    }
+  } else {
+    switch(c)
+    {
+    case color::BLACK:
+      current_color = RGB(0,0,0);
+      break;
+    case color::WHITE:
+    default:
+      current_color = RGB(0xff, 0xff, 0xff);
+      break;
+    }
   }
 }
 
