@@ -211,6 +211,7 @@ int MarlinGame::draw_string(const game_dim_t x, const game_dim_t y, const char *
   };
 
   SetTextColor(hdc, current_color);
+  SetBkColor(hdc, RGB(0, 0, 0));
   DrawText(hdc, str, -1, &re, DT_LEFT | DT_TOP | DT_SINGLELINE);
 }
 
