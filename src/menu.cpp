@@ -14,6 +14,7 @@ const struct
   void (*run)();
 } actions[] = {
     {"Flappy", flappy.enter_game},
+    {"Tennis", tennis_game::tennis.enter_game},
     {"Sn4k3", snake.enter_game},
     {"Brickout", brickout.enter_game},
     {"Invaders", invaders.enter_game},
