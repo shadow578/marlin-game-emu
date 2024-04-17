@@ -129,11 +129,8 @@ void TennisGame::reset_ball()
 {
   state.ball.x = BTOF(GAME_WIDTH / 2);
   state.ball.y = BTOF(GAME_HEIGHT / 2);
-  state.ball.x_velocity = FTOF(-1.5f);
-  state.ball.y_velocity = FTOF(0.5f);
-  // FIXME the following two lines crash the game
-  // state.ball.x_velocity = FTOF(random(-0.5f, 0.5f));
-  // state.ball.y_velocity = FTOF(random(-0.5f, 0.5f));
+  state.ball.x_velocity = FTOF(random(-100, 100) / 100.0f); // -1.0 to 1.0
+  state.ball.y_velocity = FTOF(random(-100, 100) / 100.0f); // "
 }
 
 void TennisGame::update_player()
