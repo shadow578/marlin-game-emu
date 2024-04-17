@@ -32,7 +32,6 @@ constexpr game_dim_t scores_y = GAME_FONT_ASCENT + 1;
 constexpr game_dim_t player_score_x = net_x - 2 - (GAME_FONT_WIDTH * 2);
 constexpr game_dim_t opponent_score_x = net_x + 2;
 
-
 // Paddle:
 //
 //    | paddle_width
@@ -57,7 +56,6 @@ constexpr int8_t paddle_velocity = 2;
 constexpr game_dim_t player_paddle_x = paddle_wall_distance;
 constexpr game_dim_t opponent_paddle_x = GAME_WIDTH - paddle_wall_distance - paddle_width;
 
-
 // Ball:
 //
 //          | ball_size
@@ -69,7 +67,6 @@ constexpr game_dim_t opponent_paddle_x = GAME_WIDTH - paddle_wall_distance - pad
 // ~                 ~
 // |-//-----------//-|
 constexpr game_dim_t ball_size = 2;
-
 
 // Trickshot:
 constexpr fixed_t trickshot_edge_distance = FTOF(paddle_height / 6.0f);
@@ -135,8 +132,10 @@ void TennisGame::reset_ball()
 {
   state.ball.x = BTOF(GAME_WIDTH / 2);
   state.ball.y = BTOF(GAME_HEIGHT / 2);
-  state.ball.x_velocity = FTOF(random(-100, 100) / 100.0f); // -1.0 to 1.0
-  state.ball.y_velocity = FTOF(random(-100, 100) / 100.0f); // "
+  state.ball.y_velocity = FTOF(random(-100, 100) / 100.0f); // -1.0 to 1.0
+
+  state.ball.x_velocity = FTOF(random(50, 100) / 100.0f)   // 0.5 to 1.0
+                          * (random(0, 1) ? 1.0f : -1.0f); // 50:50 random direction
 }
 
 void TennisGame::update_player()
