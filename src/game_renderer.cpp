@@ -9,7 +9,20 @@ bool color_enable = true;
 COLORREF current_color = RGB(0, 0, 0);
 static HDC hdc;
 
-static int draw_call_cnt = 0; // number of draw calls between frame_start and frame_end
+constexpr bool dont_count_subcalls = true;
+typedef struct {
+  int set_color,
+  int draw_hline,
+  int draw_vline,
+  int draw_frame,
+  int draw_box,
+  int draw_pixel,
+  int draw_bitmap,
+  int draw_string,
+  int draw_int,
+} draw_call_cnt_t;
+
+static draw_call_cnt_t draw_call_cnt = { 0 }; // number of draw calls between frame_start and frame_end
 static int frame_draw_time = 0; // time between frame_start and frame_end
 static int frame_wait_time = 0; // time between frame_end and frame_start
 
@@ -40,7 +53,7 @@ bool get_color_enabled()
 
 void MarlinGame::frame_start()
 {
-  draw_call_cnt = 0;
+  draw_call_cnt = { 0 };
   frame_draw_time = GetTickCount();
   frame_wait_time = frame_draw_time - frame_wait_time;
   
@@ -64,7 +77,28 @@ void MarlinGame::frame_end()
   frame_wait_time = GetTickCount();
   frame_draw_time = frame_wait_time - frame_draw_time;
 
-  std::cout << "draw: " << frame_draw_time << " ms (wait: " << fwt << " ms), " << draw_call_cnt << " draw calls" << std::endl;
+  int total_draw_calls = draw_call_cnt.set_color 
+                       + draw_call_cnt.draw_hline 
+                       + draw_call_cnt.draw_vline 
+                       + draw_call_cnt.draw_frame 
+                       + draw_call_cnt.draw_box 
+                       + draw_call_cnt.draw_pixel 
+                       + draw_call_cnt.draw_bitmap 
+                       + draw_call_cnt.draw_string
+                       + draw_call_cnt.draw_int;
+
+  std::cout << "draw: " << frame_draw_time << " ms (wait: " << fwt << " ms);  "
+            << draw_call_cnt.set_color << "x set_color; "
+            << draw_call_cnt.draw_hline << "x hline; "
+            << draw_call_cnt.draw_vline << "x vline; "
+            << draw_call_cnt.draw_frame << "x frame; "
+            << draw_call_cnt.draw_box << "x box; "
+            << draw_call_cnt.draw_pixel << "x pixel; "
+            << draw_call_cnt.draw_bitmap << "x bitmap; "
+            << draw_call_cnt.draw_string << "x string; "
+            << draw_call_cnt.draw_int << "x int; "
+            << total_draw_calls << "x calls total" 
+            << std::endl;
   
   if (debug)
   {
@@ -118,6 +152,8 @@ void MarlinGame::set_color(const color c)
       break;
     }
   }
+
+  draw_call_cnt.set_color++;
 }
 
 void MarlinGame::draw_hline(const game_dim_t x, const game_dim_t y, const game_dim_t w)
@@ -128,6 +164,13 @@ void MarlinGame::draw_hline(const game_dim_t x, const game_dim_t y, const game_d
   }
 
   draw_box(x, y, w, 1);
+
+  draw_call_cnt.draw_hline++;
+
+  if (dont_count_subcalls)
+  {
+    draw_call_cnt.draw_box--;
+  }
 }
 
 void MarlinGame::draw_vline(const game_dim_t x, const game_dim_t y, const game_dim_t h)
@@ -138,6 +181,13 @@ void MarlinGame::draw_vline(const game_dim_t x, const game_dim_t y, const game_d
   }
 
   draw_box(x, y, 1, h);
+
+  draw_call_cnt.draw_vline++;
+
+  if (dont_count_subcalls)
+  {
+    draw_call_cnt.draw_box--;
+  }
 }
 
 void MarlinGame::draw_frame(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
@@ -152,6 +202,14 @@ void MarlinGame::draw_frame(const game_dim_t x, const game_dim_t y, const game_d
   draw_hline(x, y + h - 1, w);
   draw_vline(x, y, h);
   draw_vline(x + w - 1, y, h);
+
+  draw_call_cnt.draw_frame++;
+
+  if (dont_count_subcalls)
+  {
+    draw_call_cnt.draw_hline -= 2;
+    draw_call_cnt.draw_vline -= 2;
+  }
 }
 
 void MarlinGame::draw_box(const game_dim_t x, const game_dim_t y, const game_dim_t w, const game_dim_t h)
@@ -171,7 +229,7 @@ void MarlinGame::draw_box(const game_dim_t x, const game_dim_t y, const game_dim
   FillRect(hdc, &rect, brush);
   DeleteObject(brush);
 
-  draw_call_cnt++; // box is the only shape that actually draws
+  draw_call_cnt.draw_box++;
 }
 
 void MarlinGame::draw_pixel(const game_dim_t x, const game_dim_t y)
@@ -182,6 +240,13 @@ void MarlinGame::draw_pixel(const game_dim_t x, const game_dim_t y)
   }
 
   draw_box(x, y, 1, 1);
+
+  draw_call_cnt.draw_pixel++;
+
+  if (dont_count_subcalls)
+  {
+    draw_call_cnt.draw_box--;
+  }
 }
 
 void MarlinGame::draw_bitmap(const game_dim_t x, const game_dim_t y, const game_dim_t bytes_per_row, const game_dim_t rows, const pgm_bitmap_t bitmap)
@@ -206,10 +271,17 @@ void MarlinGame::draw_bitmap(const game_dim_t x, const game_dim_t y, const game_
         if (byte & (1 << bit))
         {
           draw_pixel(x + (col * 8) + (7 - bit + 1), y + row);
+
+          if (dont_count_subcalls)
+          {
+            draw_call_cnt.draw_pixel--;
+          }
         }
       }
     }
   }
+
+  draw_call_cnt.draw_bitmap++;
 }
 
 int MarlinGame::draw_string(const game_dim_t x, const game_dim_t y, const char *str)
@@ -230,7 +302,7 @@ int MarlinGame::draw_string(const game_dim_t x, const game_dim_t y, const char *
   SetBkColor(hdc, RGB(0, 0, 0));
   DrawText(hdc, str, -1, &re, DT_LEFT | DT_TOP | DT_SINGLELINE);
 
-  draw_call_cnt++;
+  draw_call_cnt.draw_string++;
 }
 
 void MarlinGame::draw_int(const game_dim_t x, const game_dim_t y, const int value)
@@ -243,4 +315,11 @@ void MarlinGame::draw_int(const game_dim_t x, const game_dim_t y, const int valu
   char buffer[32];
   snprintf(buffer, sizeof(buffer), "%d", value);
   draw_string(x, y, buffer);
+
+  draw_call_cnt.draw_int++;
+
+  if (dont_count_subcalls)
+  {
+    draw_call_cnt.draw_string--;
+  }
 }
