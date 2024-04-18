@@ -9,6 +9,10 @@ bool color_enable = true;
 COLORREF current_color = RGB(0, 0, 0);
 static HDC hdc;
 
+static int draw_call_cnt = 0; // number of draw calls between frame_start and frame_end
+static int frame_draw_time = 0; // time between frame_start and frame_end
+static int frame_wait_time = 0; // time between frame_end and frame_start
+
 constexpr game_dim_t screen_to_game(const screen_dim_t x)
 {
   return x / SCALE;
@@ -36,6 +40,10 @@ bool get_color_enabled()
 
 void MarlinGame::frame_start()
 {
+  draw_call_cnt = 0;
+  frame_draw_time = GetTickCount();
+  frame_wait_time = frame_draw_time - frame_wait_time;
+  
   // draw full size rectangle in black
   const auto prev_color = current_color;
   current_color = RGB(0, 0, 0);
@@ -52,6 +60,12 @@ void MarlinGame::frame_start()
 
 void MarlinGame::frame_end()
 {
+  int fwt = frame_wait_time;
+  frame_wait_time = GetTickCount();
+  frame_draw_time = frame_wait_time - frame_draw_time;
+
+  std::cout << "draw: " << frame_draw_time << " ms (wait: " << fwt << " ms), " << draw_call_cnt << " draw calls" << std::endl;
+  
   if (debug)
   {
     std::cout << "-- frame end --" << std::endl;
@@ -156,6 +170,8 @@ void MarlinGame::draw_box(const game_dim_t x, const game_dim_t y, const game_dim
   HBRUSH brush = CreateSolidBrush(current_color);
   FillRect(hdc, &rect, brush);
   DeleteObject(brush);
+
+  draw_call_cnt++; // box is the only shape that actually draws
 }
 
 void MarlinGame::draw_pixel(const game_dim_t x, const game_dim_t y)
@@ -213,6 +229,8 @@ int MarlinGame::draw_string(const game_dim_t x, const game_dim_t y, const char *
   SetTextColor(hdc, current_color);
   SetBkColor(hdc, RGB(0, 0, 0));
   DrawText(hdc, str, -1, &re, DT_LEFT | DT_TOP | DT_SINGLELINE);
+
+  draw_call_cnt++;
 }
 
 void MarlinGame::draw_int(const game_dim_t x, const game_dim_t y, const int value)
