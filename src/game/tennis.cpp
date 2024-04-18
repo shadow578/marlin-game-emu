@@ -69,9 +69,26 @@ constexpr game_dim_t opponent_paddle_x = GAME_WIDTH - paddle_wall_distance - pad
 constexpr game_dim_t ball_size = 2;
 
 // Trickshot:
+//
+// |------//--
+// |             ^   ^
+// | y magnitude |  / <- total magnitude
+// |     portion | /     (velocity change)
+// |          ___|/------>
+// |   |---| |   |  x magnitude
+// |   |###| |___|  portion
+// |   |###|
+// |   |   |
+// |   |   |
+// |   |   |
+// |   |###| ---------
+// |   |###|         | <- edge_distance
+// |   |---| ---------
+// ~
+// |------//--
 constexpr fixed_t trickshot_edge_distance = FTOF(paddle_height / 6.0f);
-constexpr fixed_t trickshot_x_magnitude = FTOF(0.2f);
-constexpr fixed_t trickshot_y_magnitude = FTOF(0.2f);
+constexpr fixed_t trickshot_base_magnitude_x = FTOF(0.2f); // * 0.1 to 1.0
+constexpr fixed_t trickshot_base_magnitude_y = FTOF(0.2f); // "
 
 void TennisGame::enter_game()
 {
@@ -258,8 +275,8 @@ void TennisGame::do_score(const bool player)
 
 void TennisGame::do_trickshot(const bool top_edge, const bool player)
 {
-  const fixed_t x_magnitude = (random(1, 10) * trickshot_x_magnitude) / 10; // 0.1 * N to 1.0 * N
-  const fixed_t y_magnitude = (random(1, 10) * trickshot_y_magnitude) / 10; // "
+  const fixed_t x_magnitude = (random(1, 10) * trickshot_base_magnitude_x) / 10; // 0.1 * N to 1.0 * N
+  const fixed_t y_magnitude = (random(1, 10) * trickshot_base_magnitude_y) / 10; // "
 
   state.ball.x_velocity += player ? x_magnitude : -x_magnitude;
   state.ball.y_velocity += top_edge ? y_magnitude : -y_magnitude;
