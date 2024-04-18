@@ -11,15 +11,15 @@ static HDC hdc;
 
 constexpr bool dont_count_subcalls = true;
 typedef struct {
-  int set_color,
-  int draw_hline,
-  int draw_vline,
-  int draw_frame,
-  int draw_box,
-  int draw_pixel,
-  int draw_bitmap,
-  int draw_string,
-  int draw_int,
+  int set_color;
+  int draw_hline;
+  int draw_vline;
+  int draw_frame;
+  int draw_box;
+  int draw_pixel;
+  int draw_bitmap;
+  int draw_string;
+  int draw_int;
 } draw_call_cnt_t;
 
 static draw_call_cnt_t draw_call_cnt = { 0 }; // number of draw calls between frame_start and frame_end
