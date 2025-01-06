@@ -37,7 +37,7 @@ union MarlinGameData {
   brickout_data_t brickout;
   invaders_data_t invaders;
   flappy_data_t flappy;
-  tennis_game::state_t tennis;
+  TennisGame::state_t tennis;
   BlocksGame::state_t blocks;
 };
 

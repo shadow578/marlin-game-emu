@@ -1,8 +1,7 @@
 #if 1
 
 #include "game.h"
-using namespace tennis_game;
-static state_t &state = marlin_game_data.tennis;
+static TennisGame::state_t &state = marlin_game_data.tennis;
 
 #define TRANSLATE_X(x) (x)
 #define TRANSLATE_Y(y) (GAME_HEIGHT - y)
