@@ -19,9 +19,8 @@
 #define FALL_SPEED 200
 
 // location of the next tetromino preview
-#define NEXT_TETROMINO_X ((TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 4)
-#define NEXT_TETROMINO_Y 2
-
+#define NEXT_TETROMINO_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
+#define NEXT_TETROMINO_Y BOARD_OFFSET_Y
 
 // tetramino shapes, each one is a bitmap of 4 rows x 4 bits (LSB)
 // top-left corner is the x/y position recorded
@@ -33,30 +32,34 @@ const uint8_t TETRAMINO_SHAPE[/*id*/ 1][/*rotation*/ 4][/*row*/ 4] = {
             0b1000,
             0b1000,
             0b1000,
-            0b1000},
+            0b1000,
+        },
         // 90 degrees
         {
             0b1111,
             0b0000,
             0b0000,
-            0b0000},
+            0b0000,
+        },
         // 180 degrees
         {
             0b1000,
             0b1000,
             0b1000,
-            0b1000},
+            0b1000,
+        },
         // 270 degrees
         {
             0b1111,
             0b0000,
             0b0000,
-            0b0000}}
+            0b0000,
+        },
+    }
 
     // TODO other shapes
 
 };
-
 
 #define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
 #define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
@@ -109,7 +112,7 @@ void TetrisGame::game_screen()
     {
       // no more lines to clear, spawn new falling block
       game_state = GAME_STATE_FALLING_ACTIVE;
-      
+
       if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, marlin_game_data.tetris.next_tetromino))
       {
         // cannot spawn new tetromino, game over
@@ -118,7 +121,7 @@ void TetrisGame::game_screen()
       else
       {
         // determine next tetromino
-        marlin_game_data.tetris.next_tetromino = tetromino::I; //static_cast<tetromino>(random(0, 7)); // TODO: use random instead of hard-coded
+        marlin_game_data.tetris.next_tetromino = static_cast<tetromino>(random(0, 7));
       }
     }
   }
@@ -126,21 +129,26 @@ void TetrisGame::game_screen()
   frame_start();
   draw_board(marlin_game_data.tetris.board);
 
+  // draw falling tetromino
   draw_tetromino_shape(BOARD_X_TO_SCREEN(marlin_game_data.tetris.falling.x),
                        BOARD_Y_TO_SCREEN(marlin_game_data.tetris.falling.y),
                        marlin_game_data.tetris.falling.type,
                        marlin_game_data.tetris.falling.rotation);
 
-  //static falling_t next_falling;
-  //next_falling.type = marlin_game_data.tetris.next_tetromino;
-  //next_falling.x = NEXT_TETROMINO_X;
-  //next_falling.y = NEXT_TETROMINO_Y;
-  //next_falling.rotation = 0;
-  //draw_falling(next_falling);
+  // draw next tetromino preview
+  set_color(color::WHITE);
+  draw_frame(NEXT_TETROMINO_X - 1,
+             NEXT_TETROMINO_Y - 1,
+             (4 * TETROMINO_SIZE) + 2,
+             (4 * TETROMINO_SIZE) + 2);
+  draw_tetromino_shape(NEXT_TETROMINO_X,
+                       NEXT_TETROMINO_Y,
+                       marlin_game_data.tetris.next_tetromino,
+                       0);
 
   if (game_state == GAME_STATE_GAME_OVER)
     draw_game_over();
-  
+
   frame_end();
 }
 
@@ -221,7 +229,7 @@ bool TetrisGame::handle_line_clear(board_t &board)
     if (full)
     {
       // clear the line
-      //for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+      // for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
       //{
       //  board.set(x, y, tetromino::NONE);
       //}
@@ -244,7 +252,6 @@ bool TetrisGame::handle_line_clear(board_t &board)
       return true;
     }
   }
-
 }
 
 void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
@@ -351,7 +358,7 @@ void TetrisGame::draw_tetromino_shape(const game_dim_t screen_x, const game_dim_
     {
       if (shape[y] & (1 << (3 - x)))
       {
-        draw_tetromino_block(screen_x + (x * TETROMINO_SIZE), screen_y + (y * TETROMINO_SIZE), type); 
+        draw_tetromino_block(screen_x + (x * TETROMINO_SIZE), screen_y + (y * TETROMINO_SIZE), type);
       }
     }
   }
@@ -374,7 +381,7 @@ void TetrisGame::draw_tetromino_block(const game_dim_t screen_x, const game_dim_
   assert(c < sizeof(TETROMINO_COLORS) / sizeof(TETROMINO_COLORS[0]));
 
   set_color(TETROMINO_COLORS[c]);
-  draw_box(screen_x, 
+  draw_box(screen_x,
            screen_y,
            TETROMINO_SIZE,
            TETROMINO_SIZE);
