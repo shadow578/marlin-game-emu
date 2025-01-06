@@ -130,6 +130,9 @@ public:
   };
 
 private:
+  static void on_falling_committed(const falling_t &falling);
+  static void on_lines_cleared(const uint8_t count);
+
   static void handle_player_input(const board_t &board, falling_t &falling);
   static bool handle_falling_gravity(const board_t &board, falling_t &falling, const millis_t now, const millis_t fall_speed);
   static bool handle_line_clear(board_t &board);

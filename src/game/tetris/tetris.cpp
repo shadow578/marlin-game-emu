@@ -22,6 +22,10 @@
 #define NEXT_TETROMINO_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
 #define NEXT_TETROMINO_Y BOARD_OFFSET_Y
 
+// location of the score display
+#define SCORE_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
+#define SCORE_Y (NEXT_TETROMINO_Y + (4 * TETROMINO_SIZE) + 2)
+
 
 #define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
 #define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
@@ -70,21 +74,28 @@ void TetrisGame::game_screen()
   }
   else if (game_state == GAME_STATE_LINE_CLEAR)
   {
-    if (!handle_line_clear(marlin_game_data.tetris.board))
+    // clear lines until no more lines to clear
+    uint8_t cleared = 0;
+    while(handle_line_clear(marlin_game_data.tetris.board))
     {
-      // no more lines to clear, spawn new falling block
-      game_state = GAME_STATE_FALLING_ACTIVE;
+      cleared++;
+    }
 
-      if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, marlin_game_data.tetris.next_tetromino))
-      {
-        // cannot spawn new tetromino, game over
-        game_state = GAME_STATE_GAME_OVER;
-      }
-      else
-      {
-        // determine next tetromino
-        marlin_game_data.tetris.next_tetromino = static_cast<tetromino>(random(0, 7));
-      }
+    // call handler for lines cleared
+    on_lines_cleared(cleared);
+
+    // no more lines to clear, spawn new falling block
+    game_state = GAME_STATE_FALLING_ACTIVE;
+
+    if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, marlin_game_data.tetris.next_tetromino))
+    {
+      // cannot spawn new tetromino, game over
+      game_state = GAME_STATE_GAME_OVER;
+    }
+    else
+    {
+      // determine next tetromino
+      marlin_game_data.tetris.next_tetromino = static_cast<tetromino>(random(0, 7));
     }
   }
 
@@ -108,10 +119,31 @@ void TetrisGame::game_screen()
                        marlin_game_data.tetris.next_tetromino,
                        0);
 
+  // draw score
+  set_color(color::WHITE);
+  draw_string(SCORE_X, SCORE_Y, "Score:");
+  draw_int(SCORE_X, SCORE_Y + GAME_FONT_ASCENT, score);
+
   if (game_state == GAME_STATE_GAME_OVER)
     draw_game_over();
 
   frame_end();
+}
+
+void TetrisGame::on_falling_committed(const falling_t &falling)
+{
+  // score based on how many lines the piece fell
+  // this is conveniently just the y coordinate of the falling piece
+  score += falling.y;
+}
+
+void TetrisGame::on_lines_cleared(const uint8_t count)
+{
+  // score based on how many lines were cleared
+  if (count == 1) score += 100; // Single
+  if (count == 2) score += 300; // Double
+  if (count == 3) score += 500; // Triple
+  if (count >= 4) score += 800; // Tetris
 }
 
 void TetrisGame::handle_player_input(const board_t &board, falling_t &falling)
@@ -235,7 +267,7 @@ void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
     }
   }
 
-  std::cout << "commit falling type=" << static_cast<int>(falling.type) << " x=" << static_cast<int>(falling.x) << " y=" << static_cast<int>(falling.y) << std::endl;
+  on_falling_committed(falling);
 }
 
 bool TetrisGame::spawn_falling(const board_t &board, falling_t &falling, const tetromino type)
