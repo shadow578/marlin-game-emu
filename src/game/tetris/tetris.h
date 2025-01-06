@@ -3,6 +3,7 @@
 #include "../types.h"
 #include "assert.h"
 
+// size of the tetris board, in cells
 constexpr size_t TETRIS_BOARD_WIDTH = 10;
 constexpr size_t TETRIS_BOARD_HEIGHT = 20;
 
@@ -158,3 +159,5 @@ private:
 };
 
 extern TetrisGame tetris;
+
+static_assert(TETRIS_BOARD_WIDTH % 2 == 0, "TETRIS_BOARD_WIDTH must be divisible by 2");

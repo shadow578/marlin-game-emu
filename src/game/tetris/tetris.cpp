@@ -5,27 +5,27 @@
 #include "../game.h"
 
 // offset of the boards top left corner from the screen top left corner
-#define BOARD_OFFSET_X 2
-#define BOARD_OFFSET_Y 2
+constexpr game_dim_t BOARD_OFFSET_X = 2;
+constexpr game_dim_t BOARD_OFFSET_Y = 2;
 
 // size of one tetromino block, squared
-#define TETROMINO_SIZE 3
+constexpr game_dim_t TETROMINO_SIZE = 3;
 
 // where on the board the tetromino will spawn, board coordinates
-#define SPAWN_POINT_X (TETRIS_BOARD_WIDTH / 2)
-#define SPAWN_POINT_Y 0
+constexpr game_dim_t SPAWN_POINT_X = (TETRIS_BOARD_WIDTH / 2);
+constexpr game_dim_t SPAWN_POINT_Y = 0;
 
 // how many milliseconds between each gravity update, ms
 // lower causes pieces to fall faster
 #define FALL_SPEED(level) (_MAX(50, 250 - (level * 50)))
 
 // location of the next tetromino preview
-#define NEXT_TETROMINO_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
-#define NEXT_TETROMINO_Y BOARD_OFFSET_Y
+constexpr game_dim_t NEXT_TETROMINO_X = (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3);
+constexpr game_dim_t NEXT_TETROMINO_Y = BOARD_OFFSET_Y;
 
 // location of the score display
-#define SCORE_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
-#define SCORE_Y (NEXT_TETROMINO_Y + (4 * TETROMINO_SIZE) + 2)
+constexpr game_dim_t SCORE_X = (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3);
+constexpr game_dim_t SCORE_Y = (NEXT_TETROMINO_Y + (4 * TETROMINO_SIZE) + 2);
 
 #define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
 #define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
@@ -386,5 +386,7 @@ const uint8_t *TetrisGame::get_tetromino_shape(const tetromino type, const uint8
 {
   return TETROMINO_SHAPES[static_cast<uint8_t>(type)][rotation];
 }
+
+
 
 #endif // MARLIN_TETRIS
