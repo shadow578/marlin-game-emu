@@ -48,55 +48,71 @@ const uint8_t TETRAMINO_SHAPE[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
 
 };
 
+
+#define GAME_STATE_GAME_OVER 0
+#define GAME_STATE_FALLING_ACTIVE 1
+#define GAME_STATE_LINE_CLEAR 2
+
 void TetrisGame::enter_game()
 {
-  init_game(1, game_screen);
+  init_game(GAME_STATE_LINE_CLEAR, game_screen);
   marlin_game_data.tetris.board.clear();
 
-  // TODO testing
-  marlin_game_data.tetris.falling.type = Tetromino::I;
-  marlin_game_data.tetris.falling.x = 2;
-  marlin_game_data.tetris.falling.y = 2;
-  marlin_game_data.tetris.falling.rotation = 0;
+  // clear the game board
+  marlin_game_data.tetris.board.clear();
 
-  marlin_game_data.tetris.board.set(2, 1, Tetromino::Z);
-
-  std::cout << "enter game" << std::endl;
+  // ensure no falling block is active
+  marlin_game_data.tetris.falling.type = Tetromino::EMPTY;
 }
 
 void TetrisGame::game_screen()
 {
-  if (game_state == 1)
+  if (game_state == GAME_STATE_GAME_OVER)
   {
-    // playing state
+    if (ui.use_click())
+      exit_game();
+  }
+  else if (game_state == GAME_STATE_FALLING_ACTIVE)
+  {
     const millis_t now = millis();
 
     handle_player_input(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
 
     if (handle_falling_gravity(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, now, FALL_SPEED))
     {
+      // landed on something, commit the falling block
       commit_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
 
-      if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling))
-      {
-        // game over
-        game_state = 0;
-      }
+      // to not continue drawing the falling block, set it to empty
+      // not doing this could cause weirdness
+      marlin_game_data.tetris.falling.type = Tetromino::EMPTY;
+
+      // check if we need to clear lines
+      game_state = GAME_STATE_LINE_CLEAR;
     }
   }
-  else if (game_state == 0)
+  else if (game_state == GAME_STATE_LINE_CLEAR)
   {
-    // game-over state
-    if (ui.use_click())
-      exit_game();
+    if (!handle_line_clear(marlin_game_data.tetris.board))
+    {
+      // no more lines to clear, spawn new falling block
+      game_state = GAME_STATE_FALLING_ACTIVE;
+      
+      if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling))
+      {
+        // cannot spawn new tetromino, game over
+        game_state = GAME_STATE_GAME_OVER;
+      }
+    }
   }
 
   frame_start();
   draw_board(marlin_game_data.tetris.board);
   draw_falling(marlin_game_data.tetris.falling);
 
-  if (!game_state)
+  if (game_state == GAME_STATE_GAME_OVER)
     draw_game_over();
+  
   frame_end();
 }
 
@@ -157,6 +173,50 @@ bool TetrisGame::handle_falling_gravity(const board_t &board, falling_t &falling
   }
 
   return false;
+}
+
+bool TetrisGame::handle_line_clear(board_t &board)
+{
+  // check bottom-to-top for full lines
+  for (uint8_t y = TETRIS_BOARD_HEIGHT - 1; y > 0; y--)
+  {
+    bool full = true;
+    for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+    {
+      if (board.get(x, y) == Tetromino::EMPTY)
+      {
+        full = false;
+        break;
+      }
+    }
+
+    if (full)
+    {
+      // clear the line
+      for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+      {
+        board.set(x, y, Tetromino::EMPTY);
+      }
+
+      // move all lines above one down
+      for (uint8_t y2 = y; y2 > 0; y2--)
+      {
+        for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+        {
+          board.set(x, y2, board.get(x, y2 - 1));
+        }
+      }
+
+      // clear the top line
+      for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+      {
+        board.set(x, 0, Tetromino::EMPTY);
+      }
+
+      return true;
+    }
+  }
+
 }
 
 void TetrisGame::commit_falling(board_t &board, const falling_t &falling)

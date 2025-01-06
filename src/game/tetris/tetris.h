@@ -131,6 +131,7 @@ public:
 private:
   static void handle_player_input(const board_t &board, falling_t &falling);
   static bool handle_falling_gravity(const board_t &board, falling_t &falling, const millis_t now, const millis_t fall_speed);
+  static bool handle_line_clear(board_t &board);
 
   static void commit_falling(board_t &board, const falling_t &falling);
   static bool spawn_falling(const board_t &board, falling_t &falling);
