@@ -3,18 +3,18 @@
 #include "../types.h"
 #include "assert.h"
 
-// size of the tetris board, in cells
-constexpr size_t TETRIS_BOARD_WIDTH = 10;
-constexpr size_t TETRIS_BOARD_HEIGHT = 20;
+// size of the game board, in cells
+constexpr size_t BLOCKS_BOARD_WIDTH = 10;
+constexpr size_t BLOCKS_BOARD_HEIGHT = 20;
 
-class TetrisGame : MarlinGame
+class BlocksGame : MarlinGame
 {
 public:
   static void enter_game();
   static void game_screen();
 
 private:
-  enum class tetromino : uint8_t
+  enum class blockshape : uint8_t
   {
     I = 0,
     J = 1,
@@ -32,23 +32,23 @@ private:
     {
       uint8_t left : 4;
       uint8_t right : 4;
-    } board[TETRIS_BOARD_WIDTH / 2][TETRIS_BOARD_HEIGHT];
+    } board[BLOCKS_BOARD_WIDTH / 2][BLOCKS_BOARD_HEIGHT];
 
     void clear()
     {
-      for (size_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+      for (size_t x = 0; x < BLOCKS_BOARD_WIDTH; x++)
       {
-        for (size_t y = 0; y < TETRIS_BOARD_HEIGHT; y++)
+        for (size_t y = 0; y < BLOCKS_BOARD_HEIGHT; y++)
         {
-          set(x, y, tetromino::NONE);
+          set(x, y, blockshape::NONE);
         }
       }
     }
 
-    void set(const uint8_t x, const uint8_t y, const tetromino value)
+    void set(const uint8_t x, const uint8_t y, const blockshape value)
     {
-      assert(x < TETRIS_BOARD_WIDTH);
-      assert(y < TETRIS_BOARD_HEIGHT);
+      assert(x < BLOCKS_BOARD_WIDTH);
+      assert(y < BLOCKS_BOARD_HEIGHT);
 
       if (x % 2 == 0)
       {
@@ -60,10 +60,10 @@ private:
       }
     }
 
-    tetromino get(const uint8_t x, const uint8_t y) const
+    blockshape get(const uint8_t x, const uint8_t y) const
     {
-      assert(x < TETRIS_BOARD_WIDTH);
-      assert(y < TETRIS_BOARD_HEIGHT);
+      assert(x < BLOCKS_BOARD_WIDTH);
+      assert(y < BLOCKS_BOARD_HEIGHT);
 
       uint8_t value;
       if (x % 2 == 0)
@@ -75,14 +75,14 @@ private:
         value = board[x / 2][y].right;
       }
 
-      return static_cast<tetromino>(value);
+      return static_cast<blockshape>(value);
     }
 
     /**
      * Check if the given coordinates are within the bounds of the board.
      * @param x The x coordinate.
      * @param y The y coordinate.
-     * @return 
+     * @return
      * - 0 - in bounds
      * - 1 - x is out of bounds
      * - 2 - y is out of bounds
@@ -90,15 +90,15 @@ private:
      */
     uint8_t check_collision(const uint8_t x, const uint8_t y) const
     {
-      if (x >= TETRIS_BOARD_WIDTH)
+      if (x >= BLOCKS_BOARD_WIDTH)
       {
         return 1;
       }
-      if (y >= TETRIS_BOARD_HEIGHT)
+      if (y >= BLOCKS_BOARD_HEIGHT)
       {
         return 2;
       }
-      if (get(x, y) != tetromino::NONE)
+      if (get(x, y) != blockshape::NONE)
       {
         return 3;
       }
@@ -106,8 +106,9 @@ private:
     }
   };
 
-  struct falling_t {
-    tetromino type;
+  struct falling_t
+  {
+    blockshape shape;
     uint8_t x;
     uint8_t y;
 
@@ -127,7 +128,7 @@ public:
   {
     board_t board;
     falling_t falling;
-    tetromino next_tetromino;
+    blockshape next_shape;
     uint8_t lines_cleared;
 
     uint8_t level() const
@@ -145,19 +146,19 @@ private:
   static bool handle_line_clear(board_t &board);
 
   static void commit_falling(board_t &board, const falling_t &falling);
-  static bool spawn_falling(const board_t &board, falling_t &falling, const tetromino type);
+  static bool spawn_falling(const board_t &board, falling_t &falling, const blockshape shape);
 
   static bool collision_check_falling(const board_t &board, const falling_t &falling);
 
   static void draw_board(const board_t &board);
-  static void draw_tetromino_shape(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type, const uint8_t rotation);
-  static void draw_tetromino_block(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type);
+  static void draw_blockshape(const game_dim_t screen_x, const game_dim_t screen_y, const blockshape shape, const uint8_t rotation);
+  static void draw_block(const game_dim_t screen_x, const game_dim_t screen_y, const blockshape type);
 
-  static const uint8_t* get_tetromino_shape(const tetromino type, const uint8_t rotation);
-  static const uint8_t TETROMINO_SHAPES[/*id*/ 7][/*rotation*/ 4][/*row*/ 4];
-  static const color TETROMINO_COLORS[/*id*/ 7];
+  static const uint8_t *get_blockshape_shape(const blockshape shape, const uint8_t rotation);
+  static const uint8_t BLOCK_SHAPES[/*id*/ 7][/*rotation*/ 4][/*row*/ 4];
+  static const color BLOCK_COLORS[/*id*/ 7];
 };
 
-extern TetrisGame tetris;
+extern BlocksGame blocks_game;
 
-static_assert(TETRIS_BOARD_WIDTH % 2 == 0, "TETRIS_BOARD_WIDTH must be divisible by 2");
+static_assert(BLOCKS_BOARD_WIDTH % 2 == 0, "BLOCKS_BOARD_WIDTH must be divisible by 2");

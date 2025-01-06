@@ -1,12 +1,10 @@
 #include "../game.h"
 
-// Shapes, rotations and colors according to https://tetris.fandom.com/wiki/SRS?file=SRS-pieces.png
-
 /**
- * Tetromino shapes, each one being a bitmap of 4 rows x 4 bits
+ * Shapes, each one being a bitmap of 4 rows x 4 bits
  * The top-left corner (row 0, bit 4) is the origin of the shape
  */
-const uint8_t TetrisGame::TETROMINO_SHAPES[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
+const uint8_t BlocksGame::BLOCK_SHAPES[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
   { // I
     { // 0 degrees
       0b0000,
@@ -206,9 +204,9 @@ const uint8_t TetrisGame::TETROMINO_SHAPES[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] 
 };
 
 /**
- * Colors of the tetrominos
+ * Colors of the blocks
  */
-const TetrisGame::color TetrisGame::TETROMINO_COLORS[7] = {
+const BlocksGame::color BlocksGame::BLOCK_COLORS[7] = {
   color::CYAN,    // I
   color::BLUE,    // J
   color::WHITE,   // L
