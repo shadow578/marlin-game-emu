@@ -28,6 +28,7 @@
 #include "invaders.h"
 #include "flappy.h"
 #include "tennis.h"
+#include "tetris/tetris.h"
 #include "../menu.h"
 
 // Pool game data to save SRAM
@@ -37,6 +38,7 @@ union MarlinGameData {
   invaders_data_t invaders;
   flappy_data_t flappy;
   tennis_game::state_t tennis;
+  TetrisGame::state_t tetris;
 };
 
 extern MarlinGameData marlin_game_data;

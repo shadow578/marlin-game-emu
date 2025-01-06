@@ -13,11 +13,12 @@ const struct
   const char *name;
   void (*run)();
 } actions[] = {
-    {"Flappy", flappy.enter_game},
-    {"Tennis", tennis_game::tennis.enter_game},
-    {"Sn4k3", snake.enter_game},
-    {"Brickout", brickout.enter_game},
-    {"Invaders", invaders.enter_game},
+    {"Tetris", tetris.enter_game},
+    //{"Flappy", flappy.enter_game},
+    //{"Tennis", tennis_game::tennis.enter_game},
+    //{"Sn4k3", snake.enter_game},
+    //{"Brickout", brickout.enter_game},
+    //{"Invaders", invaders.enter_game},
     {"Toggle Color", toggle_color},
 };
 constexpr int num_games = sizeof(actions) / sizeof(actions[0]);
