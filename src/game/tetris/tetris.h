@@ -144,6 +144,8 @@ private:
   static void draw_tetromino_block(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type);
 
   static const uint8_t* get_tetromino_shape(const tetromino type, const uint8_t rotation);
+  static const uint8_t TETROMINO_SHAPES[/*id*/ 7][/*rotation*/ 4][/*row*/ 4];
+  static const color TETROMINO_COLORS[/*id*/ 7];
 };
 
 extern TetrisGame tetris;

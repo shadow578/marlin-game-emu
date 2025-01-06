@@ -8,7 +8,7 @@
 #define BOARD_OFFSET_X 2
 #define BOARD_OFFSET_Y 2
 
-// size of one tetramino block, squared
+// size of one tetromino block, squared
 #define TETROMINO_SIZE 3
 
 // where on the board the tetromino will spawn, board coordinates
@@ -22,44 +22,6 @@
 #define NEXT_TETROMINO_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
 #define NEXT_TETROMINO_Y BOARD_OFFSET_Y
 
-// tetramino shapes, each one is a bitmap of 4 rows x 4 bits (LSB)
-// top-left corner is the x/y position recorded
-const uint8_t TETRAMINO_SHAPE[/*id*/ 1][/*rotation*/ 4][/*row*/ 4] = {
-    // I
-    {
-        // 0 degrees
-        {
-            0b1000,
-            0b1000,
-            0b1000,
-            0b1000,
-        },
-        // 90 degrees
-        {
-            0b1111,
-            0b0000,
-            0b0000,
-            0b0000,
-        },
-        // 180 degrees
-        {
-            0b1000,
-            0b1000,
-            0b1000,
-            0b1000,
-        },
-        // 270 degrees
-        {
-            0b1111,
-            0b0000,
-            0b0000,
-            0b0000,
-        },
-    }
-
-    // TODO other shapes
-
-};
 
 #define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
 #define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
@@ -366,17 +328,6 @@ void TetrisGame::draw_tetromino_shape(const game_dim_t screen_x, const game_dim_
 
 void TetrisGame::draw_tetromino_block(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type)
 {
-  const color TETROMINO_COLORS[] = {
-      color::RED,     // I
-      color::BLUE,    // J
-      color::WHITE,   // L
-      color::YELLOW,  // O
-      color::GREEN,   // S
-      color::MAGENTA, // T
-      color::CYAN,    // Z
-      color::BLACK    // EMPTY
-  };
-
   const size_t c = static_cast<size_t>(type);
   assert(c < sizeof(TETROMINO_COLORS) / sizeof(TETROMINO_COLORS[0]));
 
@@ -389,7 +340,7 @@ void TetrisGame::draw_tetromino_block(const game_dim_t screen_x, const game_dim_
 
 const uint8_t *TetrisGame::get_tetromino_shape(const tetromino type, const uint8_t rotation)
 {
-  return TETRAMINO_SHAPE[static_cast<uint8_t>(type)][rotation];
+  return TETROMINO_SHAPES[static_cast<uint8_t>(type)][rotation];
 }
 
 #endif // MARLIN_TETRIS
