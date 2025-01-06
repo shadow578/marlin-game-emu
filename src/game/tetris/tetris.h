@@ -127,6 +127,12 @@ public:
     board_t board;
     falling_t falling;
     tetromino next_tetromino;
+    uint8_t lines_cleared;
+
+    uint8_t level() const
+    {
+      return (lines_cleared / 10) + 1;
+    }
   };
 
 private:

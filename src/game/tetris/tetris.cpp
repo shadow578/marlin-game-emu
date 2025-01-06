@@ -16,7 +16,8 @@
 #define SPAWN_POINT_Y 0
 
 // how many milliseconds between each gravity update, ms
-#define FALL_SPEED 200
+// lower causes pieces to fall faster
+#define FALL_SPEED(level) (_MAX(50, 250 - (level * 50)))
 
 // location of the next tetromino preview
 #define NEXT_TETROMINO_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
@@ -25,7 +26,6 @@
 // location of the score display
 #define SCORE_X (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3)
 #define SCORE_Y (NEXT_TETROMINO_Y + (4 * TETROMINO_SIZE) + 2)
-
 
 #define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
 #define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
@@ -37,10 +37,10 @@
 void TetrisGame::enter_game()
 {
   init_game(GAME_STATE_LINE_CLEAR, game_screen);
-  marlin_game_data.tetris.board.clear();
 
-  // clear the game board
+  // reset state
   marlin_game_data.tetris.board.clear();
+  marlin_game_data.tetris.lines_cleared = 0;
 
   // ensure no falling block is active
   marlin_game_data.tetris.falling.type = tetromino::NONE;
@@ -59,7 +59,7 @@ void TetrisGame::game_screen()
 
     handle_player_input(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
 
-    if (handle_falling_gravity(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, now, FALL_SPEED))
+    if (handle_falling_gravity(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, now, FALL_SPEED(marlin_game_data.tetris.level())))
     {
       // landed on something, commit the falling block
       commit_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
@@ -76,7 +76,7 @@ void TetrisGame::game_screen()
   {
     // clear lines until no more lines to clear
     uint8_t cleared = 0;
-    while(handle_line_clear(marlin_game_data.tetris.board))
+    while (handle_line_clear(marlin_game_data.tetris.board))
     {
       cleared++;
     }
@@ -124,6 +124,10 @@ void TetrisGame::game_screen()
   draw_string(SCORE_X, SCORE_Y, "Score:");
   draw_int(SCORE_X, SCORE_Y + GAME_FONT_ASCENT, score);
 
+  // draw level
+  draw_string(SCORE_X, SCORE_Y + (2 * GAME_FONT_ASCENT), "Level:");
+  draw_int(SCORE_X, SCORE_Y + (3 * GAME_FONT_ASCENT), marlin_game_data.tetris.level());
+
   if (game_state == GAME_STATE_GAME_OVER)
     draw_game_over();
 
@@ -140,10 +144,18 @@ void TetrisGame::on_falling_committed(const falling_t &falling)
 void TetrisGame::on_lines_cleared(const uint8_t count)
 {
   // score based on how many lines were cleared
-  if (count == 1) score += 100; // Single
-  if (count == 2) score += 300; // Double
-  if (count == 3) score += 500; // Triple
-  if (count >= 4) score += 800; // Tetris
+  const uint8_t level = marlin_game_data.tetris.level();
+  if (count == 1)
+    score += level * 100; // Single
+  if (count == 2)
+    score += level * 300; // Double
+  if (count == 3)
+    score += level * 500; // Triple
+  if (count >= 4)
+    score += level * 800; // Tetris
+
+  // update lines cleared in state
+  marlin_game_data.tetris.lines_cleared += count;
 }
 
 void TetrisGame::handle_player_input(const board_t &board, falling_t &falling)
