@@ -46,7 +46,8 @@ private:
 
     void set(const uint8_t x, const uint8_t y, const Tetromino value)
     {
-      assert(check_bounds(x, y) == 0);
+      assert(x < TETRIS_BOARD_WIDTH);
+      assert(y < TETRIS_BOARD_HEIGHT);
 
       if (x % 2 == 0)
       {
@@ -60,7 +61,8 @@ private:
 
     Tetromino get(const uint8_t x, const uint8_t y) const
     {
-      assert(check_bounds(x, y) == 0);
+      assert(x < TETRIS_BOARD_WIDTH);
+      assert(y < TETRIS_BOARD_HEIGHT);
 
       uint8_t value;
       if (x % 2 == 0)
@@ -80,11 +82,12 @@ private:
      * @param x The x coordinate.
      * @param y The y coordinate.
      * @return 
-     * - 0 if in bounds
-     * - 1 if x is out of bounds
-     * - 2 if y is out of bounds
+     * - 0 - in bounds
+     * - 1 - x is out of bounds
+     * - 2 - y is out of bounds
+     * - 3 - collision with block
      */
-    uint8_t check_bounds(const uint8_t x, const uint8_t y) const
+    uint8_t check_collision(const uint8_t x, const uint8_t y) const
     {
       if (x >= TETRIS_BOARD_WIDTH)
       {
@@ -93,6 +96,10 @@ private:
       if (y >= TETRIS_BOARD_HEIGHT)
       {
         return 2;
+      }
+      if (get(x, y) != Tetromino::EMPTY)
+      {
+        return 3;
       }
       return 0;
     }
@@ -120,15 +127,14 @@ public:
   };
 
 private:
-  static void update_falling(const board_t board, falling_t &falling);
+  static void handle_player_input(const board_t &board, falling_t &falling);
+  static bool handle_falling_gravity(const board_t &board, falling_t &falling);
 
-  /**
-   * @return
-   * 0 = success
-   * 1 = out of bounds x
-   * 2 = out of bounds y 
-   */ 
-  static uint8_t bound_check_falling(const board_t &board, const falling_t &falling);
+  static void commit_falling(board_t &board, const falling_t &falling);
+  static bool spawn_falling(falling_t &falling);
+
+  static bool collision_check_falling(const board_t &board, const falling_t &falling);
+  static const uint8_t* get_falling_shape(const falling_t &falling);
 
   static void draw_falling(const falling_t &falling);
   static void draw_board(const board_t &board);

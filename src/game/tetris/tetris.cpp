@@ -1,6 +1,5 @@
 #include <iostream> // TODO testing
 
-
 #if 1
 
 #include "../game.h"
@@ -14,38 +13,33 @@
 
 // tetramino shapes, each one is a bitmap of 4 rows x 4 bits (LSB)
 // top-left corner is the x/y position recorded
-const uint8_t TETRAMINO_SHAPE[/*id*/7][/*rotation*/4][/*row*/4] = {
-  // I
-  {
-    // 0 degrees
+const uint8_t TETRAMINO_SHAPE[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
+    // I
     {
-      0b1000,
-      0b1000,
-      0b1000,
-      0b1000
-    },
-    // 90 degrees
-    {
-      0b1111,
-      0b0000,
-      0b0000,
-      0b0000
-    },
-    // 180 degrees
-    {
-      0b1000,
-      0b1000,
-      0b1000,
-      0b1000
-    },
-    // 270 degrees
-    {
-      0b1111,
-      0b0000,
-      0b0000,
-      0b0000
-    }
-  }
+        // 0 degrees
+        {
+            0b1000,
+            0b1000,
+            0b1000,
+            0b1000},
+        // 90 degrees
+        {
+            0b1111,
+            0b0000,
+            0b0000,
+            0b0000},
+        // 180 degrees
+        {
+            0b1000,
+            0b1000,
+            0b1000,
+            0b1000},
+        // 270 degrees
+        {
+            0b1111,
+            0b0000,
+            0b0000,
+            0b0000}}
 
 };
 
@@ -60,27 +54,44 @@ void TetrisGame::enter_game()
   marlin_game_data.tetris.falling.y = 2;
   marlin_game_data.tetris.falling.rotation = 0;
 
+  marlin_game_data.tetris.board.set(2, 1, Tetromino::Z);
+
   std::cout << "enter game" << std::endl;
 }
 
 void TetrisGame::game_screen()
 {
-  update_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
+  handle_player_input(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
+
+  if (handle_falling_gravity(marlin_game_data.tetris.board, marlin_game_data.tetris.falling))
+  {
+    commit_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
+
+    if (!spawn_falling(marlin_game_data.tetris.falling))
+    {
+      // game over
+      std::cout << "game over" << std::endl;
+      game_state = 0;
+    }
+  }
 
   frame_start();
   draw_board(marlin_game_data.tetris.board);
   draw_falling(marlin_game_data.tetris.falling);
+
+  if (!game_state) draw_game_over();
   frame_end();
 }
 
-void TetrisGame::update_falling(const board_t board, falling_t &falling)
+void TetrisGame::handle_player_input(const board_t &board, falling_t &falling)
 {
   // record position before update
   falling_t old = falling;
   bool dirty = false;
 
   // update position when clicking
-  if (ui.use_click()) {
+  if (ui.use_click())
+  {
     falling.rotation = (falling.rotation + 1) % 4;
     dirty = true;
   }
@@ -98,41 +109,104 @@ void TetrisGame::update_falling(const board_t board, falling_t &falling)
   }
   ui.encoderPosition = 0;
 
-  if (!dirty) return;
+  if (!dirty)
+    return;
 
-  // block movement if it would go out of bounds
-  const uint8_t bounds = bound_check_falling(board, falling);
-  if (bounds != 0)
+  // block movement if it would collide
+  if (collision_check_falling(board, falling))
   {
     falling = old;
   }
 }
 
-uint8_t TetrisGame::bound_check_falling(const board_t &board, const falling_t &falling)
+bool TetrisGame::handle_falling_gravity(const board_t &board, falling_t &falling)
+{
+  // record position before update
+  const uint8_t oldY = falling.y;
+
+  // make the block fall
+  falling.y++;
+
+  // undo falling and commit if collision detected
+  if (collision_check_falling(board, falling))
+  {
+    falling.y = oldY;
+    return true;
+  }
+
+  return false;
+}
+
+void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
 {
   if (falling.type == Tetromino::EMPTY)
   {
-    // only check bounds of origin to avoid invalid state
-    return board.check_bounds(falling.x, falling.y);
+    return;
   }
 
-  const uint8_t *shape = TETRAMINO_SHAPE[static_cast<uint8_t>(falling.type)][falling.rotation];
+  const uint8_t *shape = get_falling_shape(falling);
   for (uint8_t x = 0; x < 4; x++)
   {
     for (uint8_t y = 0; y < 4; y++)
     {
-      if (shape[y] & (1 << (4 - x)))
+      if (shape[y] & (1 << (3 - x)))
       {
-        const uint8_t bounds = board.check_bounds(falling.x + x, falling.y + y);
-        if (bounds != 0)
+        board.set(falling.x + x, falling.y + y, falling.type);
+      }
+    }
+  }
+
+  std::cout << "commit falling type=" << static_cast<int>(falling.type) << " x=" << static_cast<int>(falling.x) << " y=" << static_cast<int>(falling.y) << std::endl;
+}
+
+bool TetrisGame::spawn_falling(falling_t &falling)
+{
+  falling.type = Tetromino::I;
+  falling.x = 2;
+  falling.y = 2;
+  falling.rotation = 0;
+
+  if (collision_check_falling(marlin_game_data.tetris.board, falling))
+  {
+    // spawning not possible!
+    falling.type = Tetromino::EMPTY;
+    return false;
+  }
+
+  return true;
+}
+
+bool TetrisGame::collision_check_falling(const board_t &board, const falling_t &falling)
+{
+  if (falling.type == Tetromino::EMPTY)
+  {
+    // invalid state
+    return true;
+  }
+
+  const uint8_t *shape = get_falling_shape(falling);
+  for (uint8_t x = 0; x < 4; x++)
+  {
+    for (uint8_t y = 0; y < 4; y++)
+    {
+      if (shape[y] & (1 << (3 - x)))
+      {
+        const uint8_t collision = board.check_collision(falling.x + x, falling.y + y);
+        if (collision != 0)
         {
-          return bounds;
+          std::cout << "collision detected: " << static_cast<int>(collision) << std::endl;
+          return true;
         }
       }
     }
   }
 
-  return 0;
+  return false;
+}
+
+const uint8_t *TetrisGame::get_falling_shape(const falling_t &falling)
+{
+  return TETRAMINO_SHAPE[static_cast<uint8_t>(falling.type)][falling.rotation];
 }
 
 void TetrisGame::draw_falling(const falling_t &falling)
@@ -142,12 +216,12 @@ void TetrisGame::draw_falling(const falling_t &falling)
     return;
   }
 
-  const uint8_t *shape = TETRAMINO_SHAPE[static_cast<uint8_t>(falling.type)][falling.rotation];
+  const uint8_t *shape = get_falling_shape(falling);
   for (uint8_t x = 0; x < 4; x++)
   {
     for (uint8_t y = 0; y < 4; y++)
     {
-      if (shape[y] & (1 << (4 - x)))
+      if (shape[y] & (1 << (3 - x)))
       {
         draw_tetromino_block(falling.x + x, falling.y + y, falling.type);
       }
@@ -173,9 +247,9 @@ void TetrisGame::draw_board(const board_t &board)
   // draw outline of the board
   set_color(color::WHITE);
   draw_frame(BOARD_OFFSET_X - 1,
-           BOARD_OFFSET_Y - 1,
-           (TETRIS_BOARD_WIDTH * TETRAMINO_SIZE) + 2,
-           (TETRIS_BOARD_HEIGHT * TETRAMINO_SIZE) + 2);
+             BOARD_OFFSET_Y - 1,
+             (TETRIS_BOARD_WIDTH * TETRAMINO_SIZE) + 2,
+             (TETRIS_BOARD_HEIGHT * TETRAMINO_SIZE) + 2);
 }
 
 void TetrisGame::draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const Tetromino type)
