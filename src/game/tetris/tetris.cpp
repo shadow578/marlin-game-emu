@@ -4,10 +4,6 @@
 
 #include "../game.h"
 
-// offset of the boards top left corner from the screen top left corner
-constexpr game_dim_t BOARD_OFFSET_X = 2;
-constexpr game_dim_t BOARD_OFFSET_Y = 2;
-
 // size of one tetromino block, squared
 constexpr game_dim_t TETROMINO_SIZE = 3;
 
@@ -19,13 +15,17 @@ constexpr game_dim_t SPAWN_POINT_Y = 0;
 // lower causes pieces to fall faster
 #define FALL_SPEED(level) (_MAX(50, 250 - (level * 50)))
 
-// location of the next tetromino preview
-constexpr game_dim_t NEXT_TETROMINO_X = (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3);
+// location of the board (top left corner)
+constexpr game_dim_t BOARD_OFFSET_X = ((GAME_WIDTH - (TETRIS_BOARD_WIDTH * TETROMINO_SIZE)) / 2);
+constexpr game_dim_t BOARD_OFFSET_Y = ((GAME_HEIGHT - (TETRIS_BOARD_HEIGHT * TETROMINO_SIZE)) / 2);
+
+// location of the next tetromino preview (top left corner)
+constexpr game_dim_t NEXT_TETROMINO_X = (BOARD_OFFSET_X - 3 - (4 * TETROMINO_SIZE));
 constexpr game_dim_t NEXT_TETROMINO_Y = BOARD_OFFSET_Y;
 
-// location of the score display
+// location of the score display (top left corner)
 constexpr game_dim_t SCORE_X = (BOARD_OFFSET_X + (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 3);
-constexpr game_dim_t SCORE_Y = (NEXT_TETROMINO_Y + (4 * TETROMINO_SIZE) + 2);
+constexpr game_dim_t SCORE_Y = BOARD_OFFSET_Y;
 
 #define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
 #define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
