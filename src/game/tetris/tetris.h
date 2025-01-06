@@ -138,11 +138,12 @@ private:
   static bool spawn_falling(const board_t &board, falling_t &falling, const tetromino type);
 
   static bool collision_check_falling(const board_t &board, const falling_t &falling);
-  static const uint8_t* get_falling_shape(const falling_t &falling);
 
-  static void draw_falling(const falling_t &falling);
   static void draw_board(const board_t &board);
-  static void draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const tetromino type);
+  static void draw_tetromino_shape(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type, const uint8_t rotation);
+  static void draw_tetromino_block(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type);
+
+  static const uint8_t* get_tetromino_shape(const tetromino type, const uint8_t rotation);
 };
 
 extern TetrisGame tetris;

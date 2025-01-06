@@ -8,15 +8,20 @@
 #define BOARD_OFFSET_X 2
 #define BOARD_OFFSET_Y 2
 
+// size of one tetramino block, squared
+#define TETROMINO_SIZE 3
+
 // where on the board the tetromino will spawn, board coordinates
 #define SPAWN_POINT_X (TETRIS_BOARD_WIDTH / 2)
 #define SPAWN_POINT_Y 0
 
-// size of one tetramino block, squared
-#define TETRAMINO_SIZE 3
-
 // how many milliseconds between each gravity update, ms
-#define FALL_SPEED 100
+#define FALL_SPEED 200
+
+// location of the next tetromino preview
+#define NEXT_TETROMINO_X ((TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 4)
+#define NEXT_TETROMINO_Y 2
+
 
 // tetramino shapes, each one is a bitmap of 4 rows x 4 bits (LSB)
 // top-left corner is the x/y position recorded
@@ -52,6 +57,9 @@ const uint8_t TETRAMINO_SHAPE[/*id*/ 1][/*rotation*/ 4][/*row*/ 4] = {
 
 };
 
+
+#define BOARD_X_TO_SCREEN(x) (BOARD_OFFSET_X + (x * TETROMINO_SIZE))
+#define BOARD_Y_TO_SCREEN(y) (BOARD_OFFSET_Y + (y * TETROMINO_SIZE))
 
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_FALLING_ACTIVE 1
@@ -117,7 +125,18 @@ void TetrisGame::game_screen()
 
   frame_start();
   draw_board(marlin_game_data.tetris.board);
-  draw_falling(marlin_game_data.tetris.falling);
+
+  draw_tetromino_shape(BOARD_X_TO_SCREEN(marlin_game_data.tetris.falling.x),
+                       BOARD_Y_TO_SCREEN(marlin_game_data.tetris.falling.y),
+                       marlin_game_data.tetris.falling.type,
+                       marlin_game_data.tetris.falling.rotation);
+
+  //static falling_t next_falling;
+  //next_falling.type = marlin_game_data.tetris.next_tetromino;
+  //next_falling.x = NEXT_TETROMINO_X;
+  //next_falling.y = NEXT_TETROMINO_Y;
+  //next_falling.rotation = 0;
+  //draw_falling(next_falling);
 
   if (game_state == GAME_STATE_GAME_OVER)
     draw_game_over();
@@ -235,7 +254,7 @@ void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
     return;
   }
 
-  const uint8_t *shape = get_falling_shape(falling);
+  const uint8_t *shape = get_tetromino_shape(falling.type, falling.rotation);
   for (uint8_t x = 0; x < 4; x++)
   {
     for (uint8_t y = 0; y < 4; y++)
@@ -275,7 +294,7 @@ bool TetrisGame::collision_check_falling(const board_t &board, const falling_t &
     return true;
   }
 
-  const uint8_t *shape = get_falling_shape(falling);
+  const uint8_t *shape = get_tetromino_shape(falling.type, falling.rotation);
   for (uint8_t x = 0; x < 4; x++)
   {
     for (uint8_t y = 0; y < 4; y++)
@@ -295,31 +314,6 @@ bool TetrisGame::collision_check_falling(const board_t &board, const falling_t &
   return false;
 }
 
-const uint8_t *TetrisGame::get_falling_shape(const falling_t &falling)
-{
-  return TETRAMINO_SHAPE[static_cast<uint8_t>(falling.type)][falling.rotation];
-}
-
-void TetrisGame::draw_falling(const falling_t &falling)
-{
-  if (falling.type == tetromino::NONE)
-  {
-    return;
-  }
-
-  const uint8_t *shape = get_falling_shape(falling);
-  for (uint8_t x = 0; x < 4; x++)
-  {
-    for (uint8_t y = 0; y < 4; y++)
-    {
-      if (shape[y] & (1 << (3 - x)))
-      {
-        draw_tetromino_block(falling.x + x, falling.y + y, falling.type);
-      }
-    }
-  }
-}
-
 void TetrisGame::draw_board(const board_t &board)
 {
   // draw the blocks of the board
@@ -330,7 +324,7 @@ void TetrisGame::draw_board(const board_t &board)
       const tetromino type = board.get(x, y);
       if (type != tetromino::NONE)
       {
-        draw_tetromino_block(x, y, type);
+        draw_tetromino_block(BOARD_X_TO_SCREEN(x), BOARD_Y_TO_SCREEN(y), type);
       }
     }
   }
@@ -339,11 +333,31 @@ void TetrisGame::draw_board(const board_t &board)
   set_color(color::WHITE);
   draw_frame(BOARD_OFFSET_X - 1,
              BOARD_OFFSET_Y - 1,
-             (TETRIS_BOARD_WIDTH * TETRAMINO_SIZE) + 2,
-             (TETRIS_BOARD_HEIGHT * TETRAMINO_SIZE) + 2);
+             (TETRIS_BOARD_WIDTH * TETROMINO_SIZE) + 2,
+             (TETRIS_BOARD_HEIGHT * TETROMINO_SIZE) + 2);
 }
 
-void TetrisGame::draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const tetromino type)
+void TetrisGame::draw_tetromino_shape(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type, const uint8_t rotation)
+{
+  if (type == tetromino::NONE)
+  {
+    return;
+  }
+
+  const uint8_t *shape = get_tetromino_shape(type, rotation);
+  for (uint8_t x = 0; x < 4; x++)
+  {
+    for (uint8_t y = 0; y < 4; y++)
+    {
+      if (shape[y] & (1 << (3 - x)))
+      {
+        draw_tetromino_block(screen_x + (x * TETROMINO_SIZE), screen_y + (y * TETROMINO_SIZE), type); 
+      }
+    }
+  }
+}
+
+void TetrisGame::draw_tetromino_block(const game_dim_t screen_x, const game_dim_t screen_y, const tetromino type)
 {
   const color TETROMINO_COLORS[] = {
       color::RED,     // I
@@ -360,10 +374,15 @@ void TetrisGame::draw_tetromino_block(const uint8_t board_x, const uint8_t board
   assert(c < sizeof(TETROMINO_COLORS) / sizeof(TETROMINO_COLORS[0]));
 
   set_color(TETROMINO_COLORS[c]);
-  draw_box(BOARD_OFFSET_X + (board_x * TETRAMINO_SIZE),
-           BOARD_OFFSET_Y + (board_y * TETRAMINO_SIZE),
-           TETRAMINO_SIZE,
-           TETRAMINO_SIZE);
+  draw_box(screen_x, 
+           screen_y,
+           TETROMINO_SIZE,
+           TETROMINO_SIZE);
+}
+
+const uint8_t *TetrisGame::get_tetromino_shape(const tetromino type, const uint8_t rotation)
+{
+  return TETRAMINO_SHAPE[static_cast<uint8_t>(type)][rotation];
 }
 
 #endif // MARLIN_TETRIS
