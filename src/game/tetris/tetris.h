@@ -44,10 +44,9 @@ private:
       }
     }
 
-    void set(const size_t x, const size_t y, const Tetromino value)
+    void set(const uint8_t x, const uint8_t y, const Tetromino value)
     {
-      assert(x < TETRIS_BOARD_WIDTH);
-      assert(y < TETRIS_BOARD_HEIGHT);
+      assert(check_bounds(x, y) == 0);
 
       if (x % 2 == 0)
       {
@@ -59,10 +58,9 @@ private:
       }
     }
 
-    Tetromino get(const size_t x, const size_t y) const
+    Tetromino get(const uint8_t x, const uint8_t y) const
     {
-      assert(x < TETRIS_BOARD_WIDTH);
-      assert(y < TETRIS_BOARD_HEIGHT);
+      assert(check_bounds(x, y) == 0);
 
       uint8_t value;
       if (x % 2 == 0)
@@ -76,17 +74,55 @@ private:
 
       return static_cast<Tetromino>(value);
     }
+
+    /**
+     * Check if the given coordinates are within the bounds of the board.
+     * @param x The x coordinate.
+     * @param y The y coordinate.
+     * @return 
+     * - 0 if in bounds
+     * - 1 if x is out of bounds
+     * - 2 if y is out of bounds
+     */
+    uint8_t check_bounds(const uint8_t x, const uint8_t y) const
+    {
+      if (x >= TETRIS_BOARD_WIDTH)
+      {
+        return 1;
+      }
+      if (y >= TETRIS_BOARD_HEIGHT)
+      {
+        return 2;
+      }
+      return 0;
+    }
+  };
+
+  struct falling_t {
+    Tetromino type;
+    uint8_t x;
+    uint8_t y;
+
+    /**
+     * 0 = 0 degrees
+     * 1 = 90 degrees
+     * 2 = 180 degrees
+     * 3 = 270 degrees
+     */
+    uint8_t rotation;
   };
 
 public:
   struct state_t
   {
     board_t board;
+    falling_t falling;
   };
 
 private:
+  static void draw_falling(const falling_t &falling);
   static void draw_board(const board_t &board);
-  static void draw_tetromino_block(const size_t board_x, const size_t board_y, const Tetromino type);
+  static void draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const Tetromino type);
 };
 
 extern TetrisGame tetris;
