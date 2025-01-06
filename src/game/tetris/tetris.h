@@ -120,6 +120,16 @@ public:
   };
 
 private:
+  static void update_falling(const board_t board, falling_t &falling);
+
+  /**
+   * @return
+   * 0 = success
+   * 1 = out of bounds x
+   * 2 = out of bounds y 
+   */ 
+  static uint8_t bound_check_falling(const board_t &board, const falling_t &falling);
+
   static void draw_falling(const falling_t &falling);
   static void draw_board(const board_t &board);
   static void draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const Tetromino type);

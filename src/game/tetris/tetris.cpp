@@ -1,3 +1,6 @@
+#include <iostream> // TODO testing
+
+
 #if 1
 
 #include "../game.h"
@@ -56,21 +59,80 @@ void TetrisGame::enter_game()
   marlin_game_data.tetris.falling.x = 2;
   marlin_game_data.tetris.falling.y = 2;
   marlin_game_data.tetris.falling.rotation = 0;
+
+  std::cout << "enter game" << std::endl;
 }
 
 void TetrisGame::game_screen()
 {
-  if (ui.use_click())
-  {
-    marlin_game_data.tetris.falling.rotation = (marlin_game_data.tetris.falling.rotation + 1) % 4;
-
-    marlin_game_data.tetris.falling.y++;
-  }
+  update_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
 
   frame_start();
   draw_board(marlin_game_data.tetris.board);
   draw_falling(marlin_game_data.tetris.falling);
   frame_end();
+}
+
+void TetrisGame::update_falling(const board_t board, falling_t &falling)
+{
+  // record position before update
+  falling_t old = falling;
+  bool dirty = false;
+
+  // update position when clicking
+  if (ui.use_click()) {
+    falling.rotation = (falling.rotation + 1) % 4;
+    dirty = true;
+  }
+
+  // update left/right movement by encoder
+  if (ui.encoderPosition > 0)
+  {
+    falling.x++;
+    dirty = true;
+  }
+  else if (ui.encoderPosition < 0)
+  {
+    falling.x--;
+    dirty = true;
+  }
+  ui.encoderPosition = 0;
+
+  if (!dirty) return;
+
+  // block movement if it would go out of bounds
+  const uint8_t bounds = bound_check_falling(board, falling);
+  if (bounds != 0)
+  {
+    falling = old;
+  }
+}
+
+uint8_t TetrisGame::bound_check_falling(const board_t &board, const falling_t &falling)
+{
+  if (falling.type == Tetromino::EMPTY)
+  {
+    // only check bounds of origin to avoid invalid state
+    return board.check_bounds(falling.x, falling.y);
+  }
+
+  const uint8_t *shape = TETRAMINO_SHAPE[static_cast<uint8_t>(falling.type)][falling.rotation];
+  for (uint8_t x = 0; x < 4; x++)
+  {
+    for (uint8_t y = 0; y < 4; y++)
+    {
+      if (shape[y] & (1 << (4 - x)))
+      {
+        const uint8_t bounds = board.check_bounds(falling.x + x, falling.y + y);
+        if (bounds != 0)
+        {
+          return bounds;
+        }
+      }
+    }
+  }
+
+  return 0;
 }
 
 void TetrisGame::draw_falling(const falling_t &falling)
