@@ -11,6 +11,9 @@
 // size of one tetramino block, squared
 #define TETRAMINO_SIZE 3
 
+// how many milliseconds between each gravity update, ms
+#define FALL_SPEED 100
+
 // tetramino shapes, each one is a bitmap of 4 rows x 4 bits (LSB)
 // top-left corner is the x/y position recorded
 const uint8_t TETRAMINO_SHAPE[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
@@ -41,6 +44,8 @@ const uint8_t TETRAMINO_SHAPE[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
             0b0000,
             0b0000}}
 
+    // TODO other shapes
+
 };
 
 void TetrisGame::enter_game()
@@ -61,25 +66,37 @@ void TetrisGame::enter_game()
 
 void TetrisGame::game_screen()
 {
-  handle_player_input(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
-
-  if (handle_falling_gravity(marlin_game_data.tetris.board, marlin_game_data.tetris.falling))
+  if (game_state == 1)
   {
-    commit_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
+    // playing state
+    const millis_t now = millis();
 
-    if (!spawn_falling(marlin_game_data.tetris.falling))
+    handle_player_input(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
+
+    if (handle_falling_gravity(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, now, FALL_SPEED))
     {
-      // game over
-      std::cout << "game over" << std::endl;
-      game_state = 0;
+      commit_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling);
+
+      if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling))
+      {
+        // game over
+        game_state = 0;
+      }
     }
+  }
+  else if (game_state == 0)
+  {
+    // game-over state
+    if (ui.use_click())
+      exit_game();
   }
 
   frame_start();
   draw_board(marlin_game_data.tetris.board);
   draw_falling(marlin_game_data.tetris.falling);
 
-  if (!game_state) draw_game_over();
+  if (!game_state)
+    draw_game_over();
   frame_end();
 }
 
@@ -119,13 +136,18 @@ void TetrisGame::handle_player_input(const board_t &board, falling_t &falling)
   }
 }
 
-bool TetrisGame::handle_falling_gravity(const board_t &board, falling_t &falling)
+bool TetrisGame::handle_falling_gravity(const board_t &board, falling_t &falling, const millis_t now, const millis_t fall_speed)
 {
   // record position before update
   const uint8_t oldY = falling.y;
 
   // make the block fall
-  falling.y++;
+  const bool should_fall = (now - falling.last_update_millis) > fall_speed;
+  if (should_fall)
+  {
+    falling.y++;
+    falling.last_update_millis = now;
+  }
 
   // undo falling and commit if collision detected
   if (collision_check_falling(board, falling))
@@ -159,14 +181,15 @@ void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
   std::cout << "commit falling type=" << static_cast<int>(falling.type) << " x=" << static_cast<int>(falling.x) << " y=" << static_cast<int>(falling.y) << std::endl;
 }
 
-bool TetrisGame::spawn_falling(falling_t &falling)
+bool TetrisGame::spawn_falling(const board_t &board, falling_t &falling)
 {
+  // TODO: randomize type, update x and y spawn position
   falling.type = Tetromino::I;
   falling.x = 2;
   falling.y = 2;
   falling.rotation = 0;
 
-  if (collision_check_falling(marlin_game_data.tetris.board, falling))
+  if (collision_check_falling(board, falling))
   {
     // spawning not possible!
     falling.type = Tetromino::EMPTY;

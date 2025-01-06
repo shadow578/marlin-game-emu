@@ -47,6 +47,11 @@ inline int random(int min, int max)
   return min + rand() % (max - min);
 }
 
+inline millis_t millis()
+{
+  return GetTickCount();
+}
+
 extern void goto_menu_screen();
 
 class UiCompat

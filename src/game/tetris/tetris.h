@@ -117,6 +117,8 @@ private:
      * 3 = 270 degrees
      */
     uint8_t rotation;
+
+    millis_t last_update_millis;
   };
 
 public:
@@ -128,10 +130,10 @@ public:
 
 private:
   static void handle_player_input(const board_t &board, falling_t &falling);
-  static bool handle_falling_gravity(const board_t &board, falling_t &falling);
+  static bool handle_falling_gravity(const board_t &board, falling_t &falling, const millis_t now, const millis_t fall_speed);
 
   static void commit_falling(board_t &board, const falling_t &falling);
-  static bool spawn_falling(falling_t &falling);
+  static bool spawn_falling(const board_t &board, falling_t &falling);
 
   static bool collision_check_falling(const board_t &board, const falling_t &falling);
   static const uint8_t* get_falling_shape(const falling_t &falling);
