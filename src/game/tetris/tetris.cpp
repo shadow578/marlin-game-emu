@@ -8,6 +8,10 @@
 #define BOARD_OFFSET_X 2
 #define BOARD_OFFSET_Y 2
 
+// where on the board the tetromino will spawn, board coordinates
+#define SPAWN_POINT_X (TETRIS_BOARD_WIDTH / 2)
+#define SPAWN_POINT_Y 0
+
 // size of one tetramino block, squared
 #define TETRAMINO_SIZE 3
 
@@ -16,7 +20,7 @@
 
 // tetramino shapes, each one is a bitmap of 4 rows x 4 bits (LSB)
 // top-left corner is the x/y position recorded
-const uint8_t TETRAMINO_SHAPE[/*id*/ 7][/*rotation*/ 4][/*row*/ 4] = {
+const uint8_t TETRAMINO_SHAPE[/*id*/ 1][/*rotation*/ 4][/*row*/ 4] = {
     // I
     {
         // 0 degrees
@@ -62,7 +66,7 @@ void TetrisGame::enter_game()
   marlin_game_data.tetris.board.clear();
 
   // ensure no falling block is active
-  marlin_game_data.tetris.falling.type = Tetromino::EMPTY;
+  marlin_game_data.tetris.falling.type = tetromino::NONE;
 }
 
 void TetrisGame::game_screen()
@@ -85,7 +89,7 @@ void TetrisGame::game_screen()
 
       // to not continue drawing the falling block, set it to empty
       // not doing this could cause weirdness
-      marlin_game_data.tetris.falling.type = Tetromino::EMPTY;
+      marlin_game_data.tetris.falling.type = tetromino::NONE;
 
       // check if we need to clear lines
       game_state = GAME_STATE_LINE_CLEAR;
@@ -98,10 +102,15 @@ void TetrisGame::game_screen()
       // no more lines to clear, spawn new falling block
       game_state = GAME_STATE_FALLING_ACTIVE;
       
-      if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling))
+      if (!spawn_falling(marlin_game_data.tetris.board, marlin_game_data.tetris.falling, marlin_game_data.tetris.next_tetromino))
       {
         // cannot spawn new tetromino, game over
         game_state = GAME_STATE_GAME_OVER;
+      }
+      else
+      {
+        // determine next tetromino
+        marlin_game_data.tetris.next_tetromino = tetromino::I; //static_cast<tetromino>(random(0, 7)); // TODO: use random instead of hard-coded
       }
     }
   }
@@ -183,7 +192,7 @@ bool TetrisGame::handle_line_clear(board_t &board)
     bool full = true;
     for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
     {
-      if (board.get(x, y) == Tetromino::EMPTY)
+      if (board.get(x, y) == tetromino::NONE)
       {
         full = false;
         break;
@@ -193,10 +202,10 @@ bool TetrisGame::handle_line_clear(board_t &board)
     if (full)
     {
       // clear the line
-      for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
-      {
-        board.set(x, y, Tetromino::EMPTY);
-      }
+      //for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
+      //{
+      //  board.set(x, y, tetromino::NONE);
+      //}
 
       // move all lines above one down
       for (uint8_t y2 = y; y2 > 0; y2--)
@@ -210,7 +219,7 @@ bool TetrisGame::handle_line_clear(board_t &board)
       // clear the top line
       for (uint8_t x = 0; x < TETRIS_BOARD_WIDTH; x++)
       {
-        board.set(x, 0, Tetromino::EMPTY);
+        board.set(x, 0, tetromino::NONE);
       }
 
       return true;
@@ -221,7 +230,7 @@ bool TetrisGame::handle_line_clear(board_t &board)
 
 void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
 {
-  if (falling.type == Tetromino::EMPTY)
+  if (falling.type == tetromino::NONE)
   {
     return;
   }
@@ -241,18 +250,17 @@ void TetrisGame::commit_falling(board_t &board, const falling_t &falling)
   std::cout << "commit falling type=" << static_cast<int>(falling.type) << " x=" << static_cast<int>(falling.x) << " y=" << static_cast<int>(falling.y) << std::endl;
 }
 
-bool TetrisGame::spawn_falling(const board_t &board, falling_t &falling)
+bool TetrisGame::spawn_falling(const board_t &board, falling_t &falling, const tetromino type)
 {
-  // TODO: randomize type, update x and y spawn position
-  falling.type = Tetromino::I;
-  falling.x = 2;
-  falling.y = 2;
+  falling.type = type;
+  falling.x = SPAWN_POINT_X;
+  falling.y = SPAWN_POINT_Y;
   falling.rotation = 0;
 
   if (collision_check_falling(board, falling))
   {
     // spawning not possible!
-    falling.type = Tetromino::EMPTY;
+    falling.type = tetromino::NONE;
     return false;
   }
 
@@ -261,7 +269,7 @@ bool TetrisGame::spawn_falling(const board_t &board, falling_t &falling)
 
 bool TetrisGame::collision_check_falling(const board_t &board, const falling_t &falling)
 {
-  if (falling.type == Tetromino::EMPTY)
+  if (falling.type == tetromino::NONE)
   {
     // invalid state
     return true;
@@ -294,7 +302,7 @@ const uint8_t *TetrisGame::get_falling_shape(const falling_t &falling)
 
 void TetrisGame::draw_falling(const falling_t &falling)
 {
-  if (falling.type == Tetromino::EMPTY)
+  if (falling.type == tetromino::NONE)
   {
     return;
   }
@@ -319,8 +327,8 @@ void TetrisGame::draw_board(const board_t &board)
   {
     for (uint8_t y = 0; y < TETRIS_BOARD_HEIGHT; y++)
     {
-      const Tetromino type = board.get(x, y);
-      if (type != Tetromino::EMPTY)
+      const tetromino type = board.get(x, y);
+      if (type != tetromino::NONE)
       {
         draw_tetromino_block(x, y, type);
       }
@@ -335,7 +343,7 @@ void TetrisGame::draw_board(const board_t &board)
              (TETRIS_BOARD_HEIGHT * TETRAMINO_SIZE) + 2);
 }
 
-void TetrisGame::draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const Tetromino type)
+void TetrisGame::draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const tetromino type)
 {
   const color TETROMINO_COLORS[] = {
       color::RED,     // I

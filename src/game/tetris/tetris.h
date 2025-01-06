@@ -13,7 +13,7 @@ public:
   static void game_screen();
 
 private:
-  enum class Tetromino : uint8_t
+  enum class tetromino : uint8_t
   {
     I = 0,
     J = 1,
@@ -22,7 +22,7 @@ private:
     S = 4,
     T = 5,
     Z = 6,
-    EMPTY = 7
+    NONE = 7
   };
 
   struct board_t
@@ -39,12 +39,12 @@ private:
       {
         for (size_t y = 0; y < TETRIS_BOARD_HEIGHT; y++)
         {
-          set(x, y, Tetromino::EMPTY);
+          set(x, y, tetromino::NONE);
         }
       }
     }
 
-    void set(const uint8_t x, const uint8_t y, const Tetromino value)
+    void set(const uint8_t x, const uint8_t y, const tetromino value)
     {
       assert(x < TETRIS_BOARD_WIDTH);
       assert(y < TETRIS_BOARD_HEIGHT);
@@ -59,7 +59,7 @@ private:
       }
     }
 
-    Tetromino get(const uint8_t x, const uint8_t y) const
+    tetromino get(const uint8_t x, const uint8_t y) const
     {
       assert(x < TETRIS_BOARD_WIDTH);
       assert(y < TETRIS_BOARD_HEIGHT);
@@ -74,7 +74,7 @@ private:
         value = board[x / 2][y].right;
       }
 
-      return static_cast<Tetromino>(value);
+      return static_cast<tetromino>(value);
     }
 
     /**
@@ -97,7 +97,7 @@ private:
       {
         return 2;
       }
-      if (get(x, y) != Tetromino::EMPTY)
+      if (get(x, y) != tetromino::NONE)
       {
         return 3;
       }
@@ -106,7 +106,7 @@ private:
   };
 
   struct falling_t {
-    Tetromino type;
+    tetromino type;
     uint8_t x;
     uint8_t y;
 
@@ -126,6 +126,7 @@ public:
   {
     board_t board;
     falling_t falling;
+    tetromino next_tetromino;
   };
 
 private:
@@ -134,14 +135,14 @@ private:
   static bool handle_line_clear(board_t &board);
 
   static void commit_falling(board_t &board, const falling_t &falling);
-  static bool spawn_falling(const board_t &board, falling_t &falling);
+  static bool spawn_falling(const board_t &board, falling_t &falling, const tetromino type);
 
   static bool collision_check_falling(const board_t &board, const falling_t &falling);
   static const uint8_t* get_falling_shape(const falling_t &falling);
 
   static void draw_falling(const falling_t &falling);
   static void draw_board(const board_t &board);
-  static void draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const Tetromino type);
+  static void draw_tetromino_block(const uint8_t board_x, const uint8_t board_y, const tetromino type);
 };
 
 extern TetrisGame tetris;
