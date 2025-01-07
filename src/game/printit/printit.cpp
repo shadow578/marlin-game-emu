@@ -26,8 +26,20 @@ constexpr game_dim_t SCORE_Y = BED_Y;
 // location of the player's nozzle
 constexpr game_dim_t PLAYER_Y = 0;
 
+// location of game message (game over, level clear, game finished) box
+constexpr game_dim_t MESSAGE_WIDTH = (GAME_FONT_WIDTH * 10) + 2;
+constexpr game_dim_t MESSAGE_HEIGHT = (GAME_FONT_ASCENT * 2) + 2;
+constexpr game_dim_t MESSAGE_X = (GAME_WIDTH - MESSAGE_WIDTH) / 2;
+constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
+
+#define MESSAGE_GAME_OVER "Game Over"
+#define MESSAGE_LEVEL_CLEAR "Level Clear"
+#define MESSAGE_FINISHED "Game Finished"
+
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_ACTIVE 1
+#define GAME_STATE_LEVEL_CLEAR 2
+#define GAME_STATE_FINISHED 3
 
 #define STATE marlin_game_data.printit
 
@@ -36,31 +48,25 @@ PrintItGame::bed_t PrintItGame::target_bed;
 void PrintItGame::enter_game()
 {
   init_game(GAME_STATE_ACTIVE, game_screen);
-
-  // reset state
-  STATE.bed.clear();
-  STATE.falling.x = PRINTIT_BED_WIDTH / 2;
-  STATE.falling.y = PLAYER_Y;
-  STATE.falling.is_falling = false;
-  STATE.level = 0;
-
-  // set up the first level
-  levels[STATE.level].init(target_bed);
+  load_level(0);
 }
 
 void PrintItGame::game_screen()
 {
-  if (game_state == GAME_STATE_GAME_OVER)
+  bool do_draw_message_box = false;
+  if (game_state == GAME_STATE_GAME_OVER || game_state == GAME_STATE_FINISHED)
   {
     if (ui.use_click())
       exit_game();
+
+    do_draw_message_box = true;
   }
   else if (game_state == GAME_STATE_ACTIVE)
   {
     if (handle_player_input(STATE.bed, STATE.falling))
     {
       STATE.falling.is_falling = true;
-    }    
+    }
 
     if (handle_falling_gravity(STATE.bed, STATE.falling))
     {
@@ -83,6 +89,16 @@ void PrintItGame::game_screen()
       }
     }
   }
+  else if (game_state == GAME_STATE_LEVEL_CLEAR)
+  {
+    do_draw_message_box = true;
+
+    if (ui.use_click())
+    {
+      load_level(STATE.level++);
+      game_state = GAME_STATE_ACTIVE;
+    }
+  }
 
   frame_start();
   draw_bed(TARGET_BED_X, TARGET_BED_Y, target_bed);
@@ -95,9 +111,8 @@ void PrintItGame::game_screen()
   draw_string(SCORE_X, SCORE_Y, "Score:");
   draw_int(SCORE_X, SCORE_Y + GAME_FONT_ASCENT, score);
 
-  // draw game over screen
-  if (game_state == GAME_STATE_GAME_OVER)
-    draw_game_over();
+  if (do_draw_message_box)
+    draw_message_box();
 
   frame_end();
 }
@@ -112,18 +127,19 @@ void PrintItGame::on_level_completed()
   STATE.level++;
   if (STATE.level < PRINTIT_LEVEL_COUNT)
   {
-    levels[STATE.level].init(target_bed);
+    game_state = GAME_STATE_LEVEL_CLEAR;
   }
   else
   {
-    game_state = GAME_STATE_GAME_OVER;
+    game_state = GAME_STATE_FINISHED;
   }
 }
 
 bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling)
 {
   // ignore player input while last block is falling
-  if (falling.is_falling) return false;
+  if (falling.is_falling)
+    return false;
 
   // record position before update
   const falling_t old = falling;
@@ -159,7 +175,8 @@ bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling)
 bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling)
 {
   // ignore if not falling
-  if (!falling.is_falling) return false;
+  if (!falling.is_falling)
+    return false;
 
   // record position before update
   const uint8_t oldY = falling.y;
@@ -215,6 +232,22 @@ uint8_t PrintItGame::get_level_status(const bed_t &bed)
   return all_blocks_match ? 1 : 0;
 }
 
+void PrintItGame::load_level(const uint8_t level)
+{
+  assert(level < PRINTIT_LEVEL_COUNT);
+
+  // reset player state
+  STATE.bed.clear();
+  STATE.falling.x = PRINTIT_BED_WIDTH / 2;
+  STATE.falling.y = PLAYER_Y;
+  STATE.falling.is_falling = false;
+
+  // set up the level
+  STATE.level = level;
+  target_bed.clear();
+  levels[level].init(target_bed);
+}
+
 void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed)
 {
   set_color(color::CYAN);
@@ -244,9 +277,31 @@ void PrintItGame::draw_falling(const falling_t &falling)
 {
   set_color(color::RED);
   draw_frame(BED_X + (falling.x * BLOCK_SIZE),
-           BED_Y + (falling.y * BLOCK_SIZE),
-           BLOCK_SIZE,
-           BLOCK_SIZE);
+             BED_Y + (falling.y * BLOCK_SIZE),
+             BLOCK_SIZE,
+             BLOCK_SIZE);
+}
+
+void PrintItGame::draw_message_box()
+{
+  set_color(color::BLACK);
+  draw_box(MESSAGE_X, MESSAGE_Y, MESSAGE_WIDTH, MESSAGE_HEIGHT);
+
+  set_color(color::WHITE);
+  draw_frame(MESSAGE_X - 1, MESSAGE_Y - 1, MESSAGE_WIDTH + 2, MESSAGE_HEIGHT + 2);
+
+  switch (game_state)
+  {
+  case GAME_STATE_GAME_OVER:
+    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_GAME_OVER));
+    break;
+  case GAME_STATE_LEVEL_CLEAR:
+    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_LEVEL_CLEAR));
+    break;
+  case GAME_STATE_FINISHED:
+    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_FINISHED));
+    break;
+  }
 }
 
 #endif // MARLIN_PRINTIT

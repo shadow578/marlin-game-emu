@@ -7,7 +7,7 @@
 constexpr size_t PRINTIT_BED_WIDTH = 16;
 constexpr size_t PRINTIT_BED_HEIGHT = 20;
 
-constexpr size_t PRINTIT_LEVEL_COUNT = 1;
+constexpr size_t PRINTIT_LEVEL_COUNT = 2;
 
 class PrintItGame : MarlinGame
 {
@@ -68,23 +68,6 @@ private:
       }
       return 0;
     }
-
-    uint8_t get_set_blocks() const
-    {
-      uint8_t count = 0;
-      for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
-      {
-        for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
-        {
-          if (get(x, y))
-          {
-            count++;
-          }
-        }
-      }
-
-      return count;
-    }
   };
 
   static_assert((sizeof(PrintItGame::bed_t::bed) * 8) >= PRINTIT_BED_WIDTH * PRINTIT_BED_HEIGHT, "bed_t is too small to fit requested bed size");
@@ -121,8 +104,11 @@ private:
    */
   static uint8_t get_level_status(const bed_t &bed);
 
+  static void load_level(const uint8_t level);
+
   static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed);
   static void draw_falling(const falling_t &falling);
+  static void draw_message_box();
 
   struct level_t
   {
