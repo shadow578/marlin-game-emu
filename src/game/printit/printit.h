@@ -83,6 +83,7 @@ private:
     uint8_t x;
     uint8_t y;
     bool is_falling;
+    millis_t last_update_millis;
   };
 
 public:
@@ -99,7 +100,7 @@ private:
   static void on_level_completed();
 
   static bool handle_player_input(const bed_t &bed, falling_t &falling);
-  static bool handle_falling_gravity(const bed_t &bed, falling_t &falling);
+  static bool handle_falling_gravity(const bed_t &bed, falling_t &falling, const millis_t now, const millis_t fall_speed);
 
   static void commit_falling(const falling_t &falling, bed_t &bed);
 

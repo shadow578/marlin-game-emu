@@ -8,6 +8,10 @@
 // set to 0 to always show the target bed
 constexpr millis_t TARGET_SHOW_TIME = 0;
 
+// how many milliseconds between each gravity update, ms
+// lower causes block to fall faster
+#define FALL_SPEED(level) 250
+
 // size of one block, squared
 constexpr game_dim_t BLOCK_SIZE = 3;
 
@@ -60,6 +64,8 @@ void PrintItGame::enter_game()
 
 void PrintItGame::game_screen()
 {
+  const millis_t now = millis();
+
   bool do_draw_message_box = false;
   if (game_state == GAME_STATE_GAME_OVER || game_state == GAME_STATE_FINISHED)
   {
@@ -75,7 +81,7 @@ void PrintItGame::game_screen()
       STATE.falling.is_falling = true;
     }
 
-    if (handle_falling_gravity(STATE.bed, STATE.falling))
+    if (handle_falling_gravity(STATE.bed, STATE.falling, now, FALL_SPEED(STATE.level)))
     {
       // landed on something, commit the falling block
       commit_falling(STATE.falling, STATE.bed);
@@ -121,8 +127,6 @@ void PrintItGame::game_screen()
   bool show_target_bed = true;
   if (TARGET_SHOW_TIME != 0 && game_state == GAME_STATE_ACTIVE)
   {
-    const millis_t now = millis();
-
     if (STATE.level_start_millis == 0)
     {
       STATE.level_start_millis = now;
@@ -223,10 +227,11 @@ bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling)
   return ui.use_click();
 }
 
-bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling)
+bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling, const millis_t now, const millis_t fall_speed)
 {
   // ignore if not falling
-  if (!falling.is_falling)
+  const bool should_fall = (now - STATE.falling.last_update_millis) > FALL_SPEED(STATE.level);
+  if (!falling.is_falling || !should_fall)
     return false;
 
   // record position before update
@@ -234,6 +239,7 @@ bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling)
 
   // make the block fall
   falling.y--;
+  falling.last_update_millis = now;
 
   // undo falling and commit if collision detected
   if (bed.check_collision(falling.x, falling.y) != 0)
