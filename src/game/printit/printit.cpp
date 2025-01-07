@@ -23,15 +23,15 @@ constexpr game_dim_t BED_Y = (GAME_HEIGHT - BED_SCREEN_HEIGHT) / 2;
 constexpr game_dim_t TARGET_BED_X = 2;
 constexpr game_dim_t TARGET_BED_Y = BED_Y;
 
-// location of the score display (top left corner)
-constexpr game_dim_t SCORE_X = TARGET_BED_X + BED_SCREEN_WIDTH + 2;
-constexpr game_dim_t SCORE_Y = BED_Y;
+// location of the level name display and score display
+constexpr game_dim_t STATS_X = TARGET_BED_X + BED_SCREEN_WIDTH + 2;
+constexpr game_dim_t STATS_Y = BED_Y;
 
 // location of the player's nozzle
 constexpr game_dim_t PLAYER_Y = PRINTIT_BED_HEIGHT - 1;
 
 // location of game message (game over, level clear, game finished) box
-constexpr game_dim_t MESSAGE_WIDTH = (GAME_FONT_WIDTH * 10) + 2;
+constexpr game_dim_t MESSAGE_WIDTH = (GAME_FONT_WIDTH * 22) + 2;
 constexpr game_dim_t MESSAGE_HEIGHT = (GAME_FONT_ASCENT * 2) + 2;
 constexpr game_dim_t MESSAGE_X = (GAME_WIDTH - MESSAGE_WIDTH) / 2;
 constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
@@ -50,6 +50,7 @@ constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
 #define STATE marlin_game_data.printit
 
 PrintItGame::bed_t PrintItGame::target_bed;
+const char* PrintItGame::level_name = nullptr;
 
 void PrintItGame::enter_game()
 {
@@ -144,10 +145,22 @@ void PrintItGame::game_screen()
     draw_falling(STATE.falling);
   }
 
-  // draw score
   set_color(color::WHITE);
-  draw_string(SCORE_X, SCORE_Y, "Score:");
-  draw_int(SCORE_X, SCORE_Y + GAME_FONT_ASCENT, score);
+
+  // draw level name
+  game_dim_t stats_y = STATS_Y;
+  draw_string(STATS_X, stats_y, F("Level:"));
+  draw_int(STATS_X + (GAME_FONT_WIDTH * 7), stats_y, STATE.level + 1);
+
+  stats_y += GAME_FONT_ASCENT + 2;
+  if (level_name != nullptr)
+    draw_string(STATS_X, stats_y, level_name);
+
+  // draw score
+  stats_y += GAME_FONT_ASCENT + 2;
+  stats_y += GAME_FONT_ASCENT + 2;
+  draw_string(STATS_X, stats_y, F("Score:"));
+  draw_int(STATS_X + (GAME_FONT_WIDTH * 7) , stats_y, score);
 
   if (do_draw_message_box)
     draw_message_box();
@@ -287,6 +300,8 @@ void PrintItGame::load_level(const uint8_t level)
   STATE.level = level;
   target_bed.clear();
   levels[level].init(target_bed);
+
+  level_name = levels[level].name;
 }
 
 void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed, const bool draw_blocks)

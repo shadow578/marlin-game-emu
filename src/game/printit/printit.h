@@ -119,11 +119,13 @@ private:
 
   struct level_t
   {
+    const char* name;
     void (*init)(bed_t &bed);
   };
 
   static const level_t levels[PRINTIT_LEVEL_COUNT];
   static bed_t target_bed;
+  static const char* level_name;
 };
 
 extern PrintItGame printit_game;
