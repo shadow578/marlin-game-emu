@@ -35,11 +35,13 @@ constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
 #define MESSAGE_GAME_OVER "Game Over"
 #define MESSAGE_LEVEL_CLEAR "Level Clear"
 #define MESSAGE_FINISHED "Game Finished"
+#define MESSAGE_WELCOME "Welcome to PrintIt!"
 
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_ACTIVE 1
 #define GAME_STATE_LEVEL_CLEAR 2
 #define GAME_STATE_FINISHED 3
+#define GAME_STATE_WELCOME 4
 
 #define STATE marlin_game_data.printit
 
@@ -47,7 +49,7 @@ PrintItGame::bed_t PrintItGame::target_bed;
 
 void PrintItGame::enter_game()
 {
-  init_game(GAME_STATE_ACTIVE, game_screen);
+  init_game(GAME_STATE_WELCOME, game_screen);
   load_level(0);
 }
 
@@ -100,12 +102,28 @@ void PrintItGame::game_screen()
       game_state = GAME_STATE_ACTIVE;
     }
   }
+  else if (game_state == GAME_STATE_WELCOME)
+  {
+    do_draw_message_box = true;
+
+    if (ui.use_click())
+    {
+      game_state = GAME_STATE_ACTIVE;
+    }
+  }
 
   frame_start();
   draw_bed(TARGET_BED_X, TARGET_BED_Y, target_bed);
 
-  draw_bed(BED_X, BED_Y, STATE.bed);
-  draw_falling(STATE.falling);
+  if (game_state == GAME_STATE_WELCOME)
+  {
+    draw_bed(BED_X, BED_Y, target_bed);
+  }
+  else 
+  {
+    draw_bed(BED_X, BED_Y, STATE.bed);
+    draw_falling(STATE.falling);
+  }
 
   // draw score
   set_color(color::WHITE);
@@ -301,6 +319,9 @@ void PrintItGame::draw_message_box()
     break;
   case GAME_STATE_FINISHED:
     draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_FINISHED));
+    break;
+  case GAME_STATE_WELCOME:
+    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_WELCOME));
     break;
   }
 }
