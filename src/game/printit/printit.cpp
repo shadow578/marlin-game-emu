@@ -24,7 +24,7 @@ constexpr game_dim_t SCORE_X = TARGET_BED_X + BED_SCREEN_WIDTH + 2;
 constexpr game_dim_t SCORE_Y = BED_Y;
 
 // location of the player's nozzle
-constexpr game_dim_t PLAYER_Y = 0;
+constexpr game_dim_t PLAYER_Y = PRINTIT_BED_HEIGHT - 1;
 
 // location of game message (game over, level clear, game finished) box
 constexpr game_dim_t MESSAGE_WIDTH = (GAME_FONT_WIDTH * 10) + 2;
@@ -183,7 +183,7 @@ bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling)
   const uint8_t oldY = falling.y;
 
   // make the block fall
-  falling.y++;
+  falling.y--;
 
   // undo falling and commit if collision detected
   if (bed.check_collision(falling.x, falling.y) != 0)
@@ -259,7 +259,7 @@ void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const
       if (bed.get(x, y))
       {
         draw_box(screen_x + (x * BLOCK_SIZE),
-                 screen_y + (y * BLOCK_SIZE),
+                 screen_y + (BED_SCREEN_HEIGHT - ((y + 1) * BLOCK_SIZE)),
                  BLOCK_SIZE,
                  BLOCK_SIZE);
       }
@@ -270,15 +270,15 @@ void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const
   set_color(color::WHITE);
   draw_frame(screen_x - 1,
              screen_y - 1,
-             (PRINTIT_BED_WIDTH * BLOCK_SIZE) + 2,
-             (PRINTIT_BED_HEIGHT * BLOCK_SIZE) + 2);
+             BED_SCREEN_WIDTH + 2,
+             BED_SCREEN_HEIGHT + 2);
 }
 
 void PrintItGame::draw_falling(const falling_t &falling)
 {
   set_color(color::RED);
   draw_frame(BED_X + (falling.x * BLOCK_SIZE),
-             BED_Y + (falling.y * BLOCK_SIZE),
+             BED_Y + (BED_SCREEN_HEIGHT - ((falling.y + 1) * BLOCK_SIZE)),
              BLOCK_SIZE,
              BLOCK_SIZE);
 }

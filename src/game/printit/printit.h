@@ -25,8 +25,11 @@ private:
       memset(bed, 0, sizeof(bed));
     }
 
-    void set(const uint8_t x, const uint8_t y, const bool value = true)
+    void set(const uint8_t x, const uint8_t _y, const bool value = true)
     {
+      // invert y
+      const uint8_t y = PRINTIT_BED_HEIGHT - 1 - _y;
+      
       assert(x < PRINTIT_BED_WIDTH);
       assert(y < PRINTIT_BED_HEIGHT);
 
@@ -34,8 +37,11 @@ private:
       bed[y] |= (value << x);
     }
 
-    bool get(const uint8_t x, const uint8_t y) const
+    bool get(const uint8_t x, const uint8_t _y) const
     {
+      // invert y
+      const uint8_t y = PRINTIT_BED_HEIGHT - 1 - _y;
+
       assert(x < PRINTIT_BED_WIDTH);
       assert(y < PRINTIT_BED_HEIGHT);
 
