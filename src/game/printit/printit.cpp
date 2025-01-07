@@ -10,7 +10,7 @@ constexpr millis_t TARGET_SHOW_TIME = 0;
 
 // how many milliseconds between each gravity update, ms
 // lower causes block to fall faster
-#define FALL_SPEED(level) (200 - (level * 10))
+#define FALL_SPEED(level) (150 - (level * 10))
 
 // size of one block, squared
 constexpr game_dim_t BLOCK_SIZE = 3;

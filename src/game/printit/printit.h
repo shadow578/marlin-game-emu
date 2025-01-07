@@ -7,7 +7,7 @@
 constexpr size_t PRINTIT_BED_WIDTH = 16;
 constexpr size_t PRINTIT_BED_HEIGHT = 20;
 
-constexpr size_t PRINTIT_LEVEL_COUNT = 2;
+constexpr size_t PRINTIT_LEVEL_COUNT = 3;
 
 class PrintItGame : MarlinGame
 {
@@ -137,6 +137,8 @@ private:
   static const level_t levels[PRINTIT_LEVEL_COUNT];
   static bed_t target_bed;
   static const level_t *current_level;
+
+  static void apply_bed_shape(bed_t &bed, const uint16_t *shape, const uint8_t shape_height);
 };
 
 extern PrintItGame printit_game;
