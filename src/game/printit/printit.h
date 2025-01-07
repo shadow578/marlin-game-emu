@@ -91,6 +91,7 @@ public:
     bed_t bed;
     falling_t falling;
     uint8_t level;
+    millis_t level_start_millis;
   };
 
 private:
@@ -112,7 +113,7 @@ private:
 
   static void load_level(const uint8_t level);
 
-  static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed);
+  static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed, const bool draw_blocks = true);
   static void draw_falling(const falling_t &falling);
   static void draw_message_box();
 

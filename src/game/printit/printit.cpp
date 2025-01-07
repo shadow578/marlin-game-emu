@@ -4,6 +4,10 @@
 
 #include "../game.h"
 
+// for how long the target bed is shown after level start
+// set to 0 to always show the target bed
+constexpr millis_t TARGET_SHOW_TIME = 0;
+
 // size of one block, squared
 constexpr game_dim_t BLOCK_SIZE = 3;
 
@@ -113,7 +117,20 @@ void PrintItGame::game_screen()
   }
 
   frame_start();
-  draw_bed(TARGET_BED_X, TARGET_BED_Y, target_bed);
+  bool show_target_bed = true;
+  if (TARGET_SHOW_TIME != 0 && game_state == GAME_STATE_ACTIVE)
+  {
+    const millis_t now = millis();
+
+    if (STATE.level_start_millis == 0)
+    {
+      STATE.level_start_millis = now;
+    }
+
+    show_target_bed = (now - STATE.level_start_millis) < TARGET_SHOW_TIME;
+  }
+
+  draw_bed(TARGET_BED_X, TARGET_BED_Y, target_bed, show_target_bed);
 
   if (game_state == GAME_STATE_WELCOME)
   {
@@ -261,30 +278,35 @@ void PrintItGame::load_level(const uint8_t level)
   STATE.falling.y = PLAYER_Y;
   STATE.falling.is_falling = false;
 
+  /// signal that level start was not yet set
+  STATE.level_start_millis = 0;
+
   // set up the level
   STATE.level = level;
   target_bed.clear();
   levels[level].init(target_bed);
 }
 
-void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed)
+void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed, const bool draw_blocks)
 {
-  set_color(color::CYAN);
-  for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
+  if (draw_blocks)
   {
-    for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
+    set_color(color::CYAN);
+    for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
     {
-      if (bed.get(x, y))
+      for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
       {
-        draw_box(screen_x + (x * BLOCK_SIZE),
-                 screen_y + (BED_SCREEN_HEIGHT - ((y + 1) * BLOCK_SIZE)),
-                 BLOCK_SIZE,
-                 BLOCK_SIZE);
+        if (bed.get(x, y))
+        {
+          draw_box(screen_x + (x * BLOCK_SIZE),
+                   screen_y + (BED_SCREEN_HEIGHT - ((y + 1) * BLOCK_SIZE)),
+                   BLOCK_SIZE,
+                   BLOCK_SIZE);
+        }
       }
     }
   }
 
-  // draw outline
   set_color(color::WHITE);
   draw_frame(screen_x - 1,
              screen_y - 1,
