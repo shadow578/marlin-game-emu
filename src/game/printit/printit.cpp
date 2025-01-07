@@ -76,6 +76,7 @@ void PrintItGame::game_screen()
 
       // set falling block to player input
       STATE.falling.is_falling = false;
+      STATE.falling.y = PLAYER_Y;
 
       // check level status
       const uint8_t status = get_level_status(STATE.bed);
