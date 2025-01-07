@@ -27,7 +27,7 @@ constexpr game_dim_t BED_Y = (GAME_HEIGHT - BED_SCREEN_HEIGHT) / 2;
 constexpr game_dim_t TARGET_BED_X = 2;
 constexpr game_dim_t TARGET_BED_Y = BED_Y;
 
-// location of the level name display and score display
+// location of the level name display
 constexpr game_dim_t STATS_X = TARGET_BED_X + BED_SCREEN_WIDTH + 2;
 constexpr game_dim_t STATS_Y = BED_Y;
 
@@ -35,15 +35,19 @@ constexpr game_dim_t STATS_Y = BED_Y;
 constexpr game_dim_t PLAYER_Y = PRINTIT_BED_HEIGHT - 1;
 
 // location of game message (game over, level clear, game finished) box
-constexpr game_dim_t MESSAGE_WIDTH = (GAME_FONT_WIDTH * 22) + 2;
-constexpr game_dim_t MESSAGE_HEIGHT = (GAME_FONT_ASCENT * 2) + 2;
+constexpr game_dim_t MESSAGE_WIDTH = (GAME_FONT_WIDTH * 30) + 2;
+constexpr game_dim_t MESSAGE_HEIGHT = (GAME_FONT_ASCENT * 6) + 2;
 constexpr game_dim_t MESSAGE_X = (GAME_WIDTH - MESSAGE_WIDTH) / 2;
 constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
 
+constexpr int PERFECT_SCORE = 950;
+constexpr int PASSING_SCORE = 500;
+
+#define MESSAGE_WELCOME "Welcome to PrintIt!"
 #define MESSAGE_GAME_OVER "Game Over"
 #define MESSAGE_LEVEL_CLEAR "Level Clear"
-#define MESSAGE_FINISHED "Game Finished"
-#define MESSAGE_WELCOME "Welcome to PrintIt!"
+#define MESSAGE_CLEAR_PASSING "At least better than a Ender 3..."
+#define MESSAGE_CLEAR_PERFECT "A perfect Print!"
 
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_ACTIVE 1
@@ -54,7 +58,7 @@ constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
 #define STATE marlin_game_data.printit
 
 PrintItGame::bed_t PrintItGame::target_bed;
-const char* PrintItGame::level_name = nullptr;
+const PrintItGame::level_t *PrintItGame::current_level;
 
 void PrintItGame::enter_game()
 {
@@ -69,10 +73,10 @@ void PrintItGame::game_screen()
   bool do_draw_message_box = false;
   if (game_state == GAME_STATE_GAME_OVER || game_state == GAME_STATE_FINISHED)
   {
+    do_draw_message_box = true;
+    
     if (ui.use_click())
       exit_game();
-
-    do_draw_message_box = true;
   }
   else if (game_state == GAME_STATE_ACTIVE)
   {
@@ -95,15 +99,12 @@ void PrintItGame::game_screen()
       STATE.falling.is_falling = false;
       STATE.falling.y = PLAYER_Y;
 
-      // check level status
-      const uint8_t status = get_level_status(STATE.bed);
-      if (status == 1)
+      // check if the player used up all blocks in the level
+      const uint16_t available = target_bed.get_set_blocks();
+      const uint16_t placed = STATE.bed.get_set_blocks();
+      if (placed >= available)
       {
-        on_level_completed();
-      }
-      else if (status == 2)
-      {
-        game_state = GAME_STATE_GAME_OVER;
+        on_level_over();
       }
     }
   }
@@ -161,14 +162,7 @@ void PrintItGame::game_screen()
   draw_int(STATS_X + (GAME_FONT_WIDTH * 7), stats_y, STATE.level + 1);
 
   stats_y += GAME_FONT_ASCENT + 2;
-  if (level_name != nullptr)
-    draw_string(STATS_X, stats_y, level_name);
-
-  // draw score
-  stats_y += GAME_FONT_ASCENT + 2;
-  stats_y += GAME_FONT_ASCENT + 2;
-  draw_string(STATS_X, stats_y, F("Score:"));
-  draw_int(STATS_X + (GAME_FONT_WIDTH * 7) , stats_y, score);
+  draw_string(STATS_X, stats_y, current_level->name);
 
   if (do_draw_message_box)
     draw_message_box();
@@ -178,11 +172,17 @@ void PrintItGame::game_screen()
 
 void PrintItGame::on_falling_committed(const falling_t &falling)
 {
-  score++;
 }
 
-void PrintItGame::on_level_completed()
+void PrintItGame::on_level_over()
 {
+  score = calculate_level_score(STATE.bed);
+  if (score < PASSING_SCORE)
+  {
+    game_state = GAME_STATE_GAME_OVER;
+    return;
+  }
+
   STATE.level++;
   if (STATE.level < PRINTIT_LEVEL_COUNT)
   {
@@ -265,10 +265,10 @@ void PrintItGame::commit_falling(const falling_t &falling, bed_t &bed)
   bed.set(falling.x, falling.y, true);
 }
 
-uint8_t PrintItGame::get_level_status(const bed_t &bed)
+int PrintItGame::calculate_level_score(const bed_t &bed)
 {
-  bool all_blocks_match = true;
-
+  int s = 0;
+  int ps = 0;
   for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
   {
     for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
@@ -276,21 +276,21 @@ uint8_t PrintItGame::get_level_status(const bed_t &bed)
       const bool target = target_bed.get(x, y);
       const bool player = bed.get(x, y);
 
-      // game over if there are any blocks in the players bed that are not in the target bed
-      if (player && !target)
-      {
-        return 2;
-      }
+      // update perfect score
+      if (target) ps += 10;
 
-      // check if all blocks match
-      if (all_blocks_match && target != player)
+      // for every correctly placed block, award 10 points
+      if (target && player)
       {
-        all_blocks_match = false;
+        s += 10;
       }
     }
   }
 
-  return all_blocks_match ? 1 : 0;
+  std::cout << "s: " << s << " ps: " << ps << std::endl;
+
+  // convert to 0-1000
+  return (s * 1000) / ps;
 }
 
 void PrintItGame::load_level(const uint8_t level)
@@ -311,7 +311,7 @@ void PrintItGame::load_level(const uint8_t level)
   target_bed.clear();
   levels[level].init(target_bed);
 
-  level_name = levels[level].name;
+  current_level = &levels[level];
 }
 
 void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed, const bool draw_blocks)
@@ -363,11 +363,24 @@ void PrintItGame::draw_message_box()
     draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_GAME_OVER));
     break;
   case GAME_STATE_LEVEL_CLEAR:
-    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_LEVEL_CLEAR));
-    break;
   case GAME_STATE_FINISHED:
-    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_FINISHED));
+  {
+    game_dim_t y = MESSAGE_Y + 1;
+    draw_string(MESSAGE_X + 1, y, F(MESSAGE_LEVEL_CLEAR));
+
+    // draw score remarks
+    y += GAME_FONT_ASCENT + 1;
+    if (score >= PERFECT_SCORE)
+      draw_string(MESSAGE_X + 1, y, F(MESSAGE_CLEAR_PERFECT));
+    else if (score >= PASSING_SCORE)
+      draw_string(MESSAGE_X + 1, y, F(MESSAGE_CLEAR_PASSING));
+
+    // draw score
+    y += GAME_FONT_ASCENT + 1;
+    draw_string(MESSAGE_X + 1, y, F("Score:"));
+    draw_int(MESSAGE_X + 1 + (GAME_FONT_WIDTH * 7) , y, score);
     break;
+  }
   case GAME_STATE_WELCOME:
     draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_WELCOME));
     break;

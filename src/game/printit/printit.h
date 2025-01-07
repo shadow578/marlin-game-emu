@@ -74,6 +74,22 @@ private:
       }
       return 0;
     }
+
+    uint16_t get_set_blocks() const
+    {
+      uint16_t count = 0;
+      for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
+      {
+        for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
+        {
+          if (get(x, y))
+          {
+            count++;
+          }
+        }
+      }
+      return count;
+    }
   };
 
   static_assert((sizeof(PrintItGame::bed_t::bed) * 8) >= PRINTIT_BED_WIDTH * PRINTIT_BED_HEIGHT, "bed_t is too small to fit requested bed size");
@@ -97,20 +113,14 @@ public:
 
 private:
   static void on_falling_committed(const falling_t &falling);
-  static void on_level_completed();
+  static void on_level_over();
 
   static bool handle_player_input(const bed_t &bed, falling_t &falling);
   static bool handle_falling_gravity(const bed_t &bed, falling_t &falling, const millis_t now, const millis_t fall_speed);
 
   static void commit_falling(const falling_t &falling, bed_t &bed);
 
-  /**
-   * @return level status 
-   * 0 = some blocks missing from target
-   * 1 = all blocks present, level complete
-   * 2 = misplaced block, level failed
-   */
-  static uint8_t get_level_status(const bed_t &bed);
+  static int calculate_level_score(const bed_t &bed);
 
   static void load_level(const uint8_t level);
 
@@ -126,7 +136,7 @@ private:
 
   static const level_t levels[PRINTIT_LEVEL_COUNT];
   static bed_t target_bed;
-  static const char* level_name;
+  static const level_t *current_level;
 };
 
 extern PrintItGame printit_game;
