@@ -29,6 +29,7 @@
 #include "flappy.h"
 #include "tennis.h"
 #include "blocks/blocks.h"
+#include "printit/printit.h"
 #include "../menu.h"
 
 // Pool game data to save SRAM
@@ -39,6 +40,7 @@ union MarlinGameData {
   flappy_data_t flappy;
   TennisGame::state_t tennis;
   BlocksGame::state_t blocks;
+  PrintItGame::state_t printit;
 };
 
 extern MarlinGameData marlin_game_data;

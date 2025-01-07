@@ -13,9 +13,10 @@ const struct
   const char *name;
   void (*run)();
 } actions[] = {
-    {"Blocks", blocks_game.enter_game},
+    {"PrintIt", printit_game.enter_game},
+    //{"Blocks", blocks_game.enter_game},
     //{"Flappy", flappy.enter_game},
-    {"Tennis", tennis.enter_game},
+    //{"Tennis", tennis.enter_game},
     //{"Sn4k3", snake.enter_game},
     //{"Brickout", brickout.enter_game},
     //{"Invaders", invaders.enter_game},
