@@ -7,6 +7,8 @@
 constexpr size_t PRINTIT_BED_WIDTH = 10;
 constexpr size_t PRINTIT_BED_HEIGHT = 20;
 
+constexpr size_t PRINTIT_LEVEL_COUNT = 1;
+
 class PrintItGame : MarlinGame
 {
 public:
@@ -23,7 +25,7 @@ private:
       memset(bed, 0, sizeof(bed));
     }
 
-    void set(const uint8_t x, const uint8_t y, const bool value)
+    void set(const uint8_t x, const uint8_t y, const bool value = true)
     {
       assert(x < PRINTIT_BED_WIDTH);
       assert(y < PRINTIT_BED_HEIGHT);
@@ -66,6 +68,23 @@ private:
       }
       return 0;
     }
+
+    uint8_t get_set_blocks() const
+    {
+      uint8_t count = 0;
+      for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
+      {
+        for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
+        {
+          if (get(x, y))
+          {
+            count++;
+          }
+        }
+      }
+
+      return count;
+    }
   };
 
   static_assert((sizeof(PrintItGame::bed_t::bed) * 8) >= PRINTIT_BED_WIDTH * PRINTIT_BED_HEIGHT, "bed_t is too small to fit requested bed size");
@@ -82,18 +101,27 @@ public:
   {
     bed_t bed;
     falling_t falling;
+    uint8_t level;
   };
 
 private:
   //static void on_falling_committed(const falling_t &falling); // called when a falling block is committed to the board, for scoring
 
-  static bool handle_player_input(const bed_t &bed, falling_t &falling); // handle player input for moving the nozzle and spawning new blocks (spawn only when no block is active)
-  static bool handle_falling_gravity(const bed_t &bed, falling_t &falling); // update falling block by applying gravity, return true when landed and should commit
+  static bool handle_player_input(const bed_t &bed, falling_t &falling);
+  static bool handle_falling_gravity(const bed_t &bed, falling_t &falling);
 
-  static void commit_falling(const falling_t &falling, bed_t &bed); // commit the falling block to the board where it's currently at
+  static void commit_falling(const falling_t &falling, bed_t &bed);
 
-  static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed); // draw static board elements
-  static void draw_falling(const falling_t &falling); // draw falling block
+  static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed);
+  static void draw_falling(const falling_t &falling);
+
+  struct level_t
+  {
+    void (*init)(bed_t &bed);
+  };
+
+  static const level_t levels[PRINTIT_LEVEL_COUNT];
+  static bed_t target_bed;
 };
 
 extern PrintItGame printit_game;

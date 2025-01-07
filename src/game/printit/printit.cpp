@@ -7,9 +7,13 @@
 // size of one block, squared
 constexpr game_dim_t BLOCK_SIZE = 3;
 
-// location of the games print bed (top left corner)
+// location of the player's print bed
 constexpr game_dim_t BED_X = ((GAME_WIDTH - (PRINTIT_BED_WIDTH * BLOCK_SIZE)) / 2);
 constexpr game_dim_t BED_Y = ((GAME_HEIGHT - (PRINTIT_BED_HEIGHT * BLOCK_SIZE)) / 2);
+
+// location of the target print bed
+constexpr game_dim_t TARGET_BED_X = 1;
+constexpr game_dim_t TARGET_BED_Y = BED_Y;
 
 // location of the score display (top left corner)
 constexpr game_dim_t SCORE_X = (PRINTIT_BED_WIDTH + (BLOCKS_BOARD_WIDTH * BLOCK_SIZE) + 3);
@@ -23,6 +27,8 @@ constexpr game_dim_t PLAYER_Y = 0;
 
 #define STATE marlin_game_data.printit
 
+PrintItGame::bed_t PrintItGame::target_bed;
+
 void PrintItGame::enter_game()
 {
   init_game(GAME_STATE_ACTIVE, game_screen);
@@ -32,6 +38,10 @@ void PrintItGame::enter_game()
   STATE.falling.x = PRINTIT_BED_WIDTH / 2;
   STATE.falling.y = PLAYER_Y;
   STATE.falling.is_falling = false;
+  STATE.level = 0;
+
+  // set up the first level
+  levels[STATE.level].init(target_bed);
 }
 
 void PrintItGame::game_screen()
@@ -69,6 +79,8 @@ void PrintItGame::game_screen()
   }
 
   frame_start();
+  draw_bed(TARGET_BED_X, TARGET_BED_Y, target_bed);
+
   draw_bed(BED_X, BED_Y, STATE.bed);
   draw_falling(STATE.falling);
 
