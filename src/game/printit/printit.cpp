@@ -7,17 +7,21 @@
 // size of one block, squared
 constexpr game_dim_t BLOCK_SIZE = 3;
 
+// helpers for print bed geometry calculations
+constexpr game_dim_t BED_SCREEN_WIDTH = PRINTIT_BED_WIDTH * BLOCK_SIZE;
+constexpr game_dim_t BED_SCREEN_HEIGHT = PRINTIT_BED_HEIGHT * BLOCK_SIZE;
+
 // location of the player's print bed
-constexpr game_dim_t BED_X = ((GAME_WIDTH - (PRINTIT_BED_WIDTH * BLOCK_SIZE)) / 2);
-constexpr game_dim_t BED_Y = ((GAME_HEIGHT - (PRINTIT_BED_HEIGHT * BLOCK_SIZE)) / 2);
+constexpr game_dim_t BED_X = GAME_WIDTH - BED_SCREEN_WIDTH - 2;
+constexpr game_dim_t BED_Y = (GAME_HEIGHT - BED_SCREEN_HEIGHT) / 2;
 
 // location of the target print bed
-constexpr game_dim_t TARGET_BED_X = 1;
+constexpr game_dim_t TARGET_BED_X = 2;
 constexpr game_dim_t TARGET_BED_Y = BED_Y;
 
 // location of the score display (top left corner)
-constexpr game_dim_t SCORE_X = (PRINTIT_BED_WIDTH + (BLOCKS_BOARD_WIDTH * BLOCK_SIZE) + 3);
-constexpr game_dim_t SCORE_Y = PRINTIT_BED_HEIGHT;
+constexpr game_dim_t SCORE_X = TARGET_BED_X + BED_SCREEN_WIDTH + 2;
+constexpr game_dim_t SCORE_Y = BED_Y;
 
 // location of the player's nozzle
 constexpr game_dim_t PLAYER_Y = 0;
@@ -62,18 +66,20 @@ void PrintItGame::game_screen()
     {
       // landed on something, commit the falling block
       commit_falling(STATE.falling, STATE.bed);
+      on_falling_committed(STATE.falling);
 
       // set falling block to player input
       STATE.falling.is_falling = false;
 
-      // game over if there are any blocks in the top row
-      for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
+      // check level status
+      const uint8_t status = get_level_status(STATE.bed);
+      if (status == 1)
       {
-        if (STATE.bed.get(x, 0))
-        {
-          game_state = GAME_STATE_GAME_OVER;
-          break;
-        }
+        on_level_completed();
+      }
+      else if (status == 2)
+      {
+        game_state = GAME_STATE_GAME_OVER;
       }
     }
   }
@@ -94,6 +100,24 @@ void PrintItGame::game_screen()
     draw_game_over();
 
   frame_end();
+}
+
+void PrintItGame::on_falling_committed(const falling_t &falling)
+{
+  score++;
+}
+
+void PrintItGame::on_level_completed()
+{
+  STATE.level++;
+  if (STATE.level < PRINTIT_LEVEL_COUNT)
+  {
+    levels[STATE.level].init(target_bed);
+  }
+  else
+  {
+    game_state = GAME_STATE_GAME_OVER;
+  }
 }
 
 bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling)
@@ -161,6 +185,34 @@ void PrintItGame::commit_falling(const falling_t &falling, bed_t &bed)
   }
 
   bed.set(falling.x, falling.y, true);
+}
+
+uint8_t PrintItGame::get_level_status(const bed_t &bed)
+{
+  bool all_blocks_match = true;
+
+  for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
+  {
+    for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
+    {
+      const bool target = target_bed.get(x, y);
+      const bool player = bed.get(x, y);
+
+      // game over if there are any blocks in the players bed that are not in the target bed
+      if (player && !target)
+      {
+        return 2;
+      }
+
+      // check if all blocks match
+      if (all_blocks_match && target != player)
+      {
+        all_blocks_match = false;
+      }
+    }
+  }
+
+  return all_blocks_match ? 1 : 0;
 }
 
 void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed)

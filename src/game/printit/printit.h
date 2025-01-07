@@ -4,7 +4,7 @@
 #include "assert.h"
 
 // size of the game's print bed, in cells
-constexpr size_t PRINTIT_BED_WIDTH = 10;
+constexpr size_t PRINTIT_BED_WIDTH = 16;
 constexpr size_t PRINTIT_BED_HEIGHT = 20;
 
 constexpr size_t PRINTIT_LEVEL_COUNT = 1;
@@ -105,12 +105,21 @@ public:
   };
 
 private:
-  //static void on_falling_committed(const falling_t &falling); // called when a falling block is committed to the board, for scoring
+  static void on_falling_committed(const falling_t &falling);
+  static void on_level_completed();
 
   static bool handle_player_input(const bed_t &bed, falling_t &falling);
   static bool handle_falling_gravity(const bed_t &bed, falling_t &falling);
 
   static void commit_falling(const falling_t &falling, bed_t &bed);
+
+  /**
+   * @return level status 
+   * 0 = some blocks missing from target
+   * 1 = all blocks present, level complete
+   * 2 = misplaced block, level failed
+   */
+  static uint8_t get_level_status(const bed_t &bed);
 
   static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed);
   static void draw_falling(const falling_t &falling);
