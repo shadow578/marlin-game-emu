@@ -81,9 +81,13 @@ void PrintItGame::game_screen()
       STATE.falling.is_falling = true;
     }
 
-    if (handle_falling_gravity(STATE.bed, STATE.falling, now, FALL_SPEED(STATE.level)))
+    bool commit_block = handle_falling_gravity(STATE.bed, STATE.falling, now, FALL_SPEED(STATE.level));
+    if (!commit_block && ui.use_click())
     {
-      // landed on something, commit the falling block
+      commit_block = true;
+    }
+    if (commit_block)
+    {
       commit_falling(STATE.falling, STATE.bed);
       on_falling_committed(STATE.falling);
 
