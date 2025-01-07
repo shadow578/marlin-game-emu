@@ -40,13 +40,17 @@ constexpr game_dim_t MESSAGE_HEIGHT = (GAME_FONT_ASCENT * 6) + 2;
 constexpr game_dim_t MESSAGE_X = (GAME_WIDTH - MESSAGE_WIDTH) / 2;
 constexpr game_dim_t MESSAGE_Y = (GAME_HEIGHT - MESSAGE_HEIGHT) / 2;
 
-constexpr int PERFECT_SCORE = 950;
+// scoring thresholds, 0-1000
+constexpr int PERFECT_SCORE = 900;
 constexpr int PASSING_SCORE = 500;
 
-#define MESSAGE_WELCOME "Welcome to PrintIt!"
-#define MESSAGE_GAME_OVER "Game Over"
-#define MESSAGE_LEVEL_CLEAR "Level Clear"
-#define MESSAGE_CLEAR_PASSING "At least better than a Ender 3..."
+#define MESSAGE_WELCOME_1 "Take on the role of a 3D printer!"
+#define MESSAGE_WELCOME_2 "Print the model to progress"
+#define MESSAGE_WELCOME_3 "Click to start"
+#define MESSAGE_GAME_OVER_1 "Game Over"
+#define MESSAGE_GAME_OVER_2 "You were sent to the scrap"
+#define MESSAGE_LEVEL_CLEAR "Level Clear!"
+#define MESSAGE_CLEAR_PASSING "You could use some calibration"
 #define MESSAGE_CLEAR_PERFECT "A perfect Print!"
 
 #define GAME_STATE_GAME_OVER 0
@@ -360,8 +364,19 @@ void PrintItGame::draw_message_box()
   switch (game_state)
   {
   case GAME_STATE_GAME_OVER:
-    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_GAME_OVER));
+  {
+    game_dim_t y = MESSAGE_Y + 1;
+    draw_string(MESSAGE_X + 1, y, F(MESSAGE_GAME_OVER_1));
+
+    y += GAME_FONT_ASCENT + 1;
+    draw_string(MESSAGE_X + 1, y, F(MESSAGE_GAME_OVER_2));
+
+    // draw score
+    y += GAME_FONT_ASCENT + 1;
+    draw_string(MESSAGE_X + 1, y, F("Score:"));
+    draw_int(MESSAGE_X + 1 + (GAME_FONT_WIDTH * 7) , y, score);
     break;
+  }
   case GAME_STATE_LEVEL_CLEAR:
   case GAME_STATE_FINISHED:
   {
@@ -382,8 +397,17 @@ void PrintItGame::draw_message_box()
     break;
   }
   case GAME_STATE_WELCOME:
-    draw_string(MESSAGE_X + 1, MESSAGE_Y + 1, F(MESSAGE_WELCOME));
+  {
+    game_dim_t y = MESSAGE_Y + 1;
+    draw_string(MESSAGE_X + 1, y, F(MESSAGE_WELCOME_1));
+
+    y += GAME_FONT_ASCENT + 1;
+    draw_string(MESSAGE_X + 1, y, F(MESSAGE_WELCOME_2));
+
+    y += GAME_FONT_ASCENT + 1;
+    draw_string(MESSAGE_X + 1, y, F(MESSAGE_WELCOME_3));
     break;
+  }
   }
 }
 
