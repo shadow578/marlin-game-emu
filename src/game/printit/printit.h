@@ -74,7 +74,7 @@ private:
   {
     uint8_t x;
     uint8_t y;
-    bool active;
+    bool is_falling;
   };
 
 public:
@@ -82,20 +82,17 @@ public:
   {
     bed_t bed;
     falling_t falling;
-    uint8_t player_x;
   };
 
 private:
   //static void on_falling_committed(const falling_t &falling); // called when a falling block is committed to the board, for scoring
 
-  static bool handle_player_input(const bed_t &bed, falling_t &falling, uint8_t &player_x); // handle player input for moving the nozzle and spawning new blocks (spawn only when no block is active)
+  static bool handle_player_input(const bed_t &bed, falling_t &falling); // handle player input for moving the nozzle and spawning new blocks (spawn only when no block is active)
   static bool handle_falling_gravity(const bed_t &bed, falling_t &falling); // update falling block by applying gravity, return true when landed and should commit
 
-  static bool spawn_falling(const bed_t &bed, const uint8_t x, const uint8_t y, falling_t &falling); // spawn a new falling block after user input; spawn point is player pos
   static void commit_falling(const falling_t &falling, bed_t &bed); // commit the falling block to the board where it's currently at
 
   static void draw_bed(const uint8_t screen_x, const uint8_t screen_y, const bed_t &bed); // draw static board elements
-  static void draw_player(const uint8_t x, const uint8_t y); // draw player square "nozzle"
   static void draw_falling(const falling_t &falling); // draw falling block
 };
 

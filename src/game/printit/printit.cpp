@@ -16,7 +16,7 @@ constexpr game_dim_t SCORE_X = (PRINTIT_BED_WIDTH + (BLOCKS_BOARD_WIDTH * BLOCK_
 constexpr game_dim_t SCORE_Y = PRINTIT_BED_HEIGHT;
 
 // location of the player's nozzle
-constexpr game_dim_t PLAYER_Y = PRINTIT_BED_HEIGHT - 1;
+constexpr game_dim_t PLAYER_Y = 0;
 
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_ACTIVE 1
@@ -29,10 +29,9 @@ void PrintItGame::enter_game()
 
   // reset state
   STATE.bed.clear();
-  STATE.player_x = PRINTIT_BED_WIDTH / 2;
-
-  // ensure no falling block is active
-  STATE.falling.active = false;
+  STATE.falling.x = PRINTIT_BED_WIDTH / 2;
+  STATE.falling.y = PLAYER_Y;
+  STATE.falling.is_falling = false;
 }
 
 void PrintItGame::game_screen()
@@ -44,29 +43,33 @@ void PrintItGame::game_screen()
   }
   else if (game_state == GAME_STATE_ACTIVE)
   {
-    if (handle_player_input(STATE.bed, STATE.falling, STATE.player_x))
+    if (handle_player_input(STATE.bed, STATE.falling))
     {
-      // spawn a new falling block
-      if (!spawn_falling(STATE.bed, STATE.player_x, PLAYER_Y, STATE.falling))
-      {
-        // game over, no space for new block
-        game_state = GAME_STATE_GAME_OVER;
-      }
-    }
+      STATE.falling.is_falling = true;
+    }    
 
     if (handle_falling_gravity(STATE.bed, STATE.falling))
     {
       // landed on something, commit the falling block
       commit_falling(STATE.falling, STATE.bed);
 
-      // set falling block to inactive
-      STATE.falling.active = false;
+      // set falling block to player input
+      STATE.falling.is_falling = false;
+
+      // game over if there are any blocks in the top row
+      for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
+      {
+        if (STATE.bed.get(x, 0))
+        {
+          game_state = GAME_STATE_GAME_OVER;
+          break;
+        }
+      }
     }
   }
 
   frame_start();
   draw_bed(BED_X, BED_Y, STATE.bed);
-  draw_player(STATE.player_x, PLAYER_Y);
   draw_falling(STATE.falling);
 
   // draw score
@@ -81,11 +84,17 @@ void PrintItGame::game_screen()
   frame_end();
 }
 
-bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling, uint8_t &player_x)
+bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling)
 {
+  // ignore player input while last block is falling
+  if (falling.is_falling) return false;
+
   // record position before update
-  const uint8_t oldX = player_x;
+  const falling_t old = falling;
   bool dirty = false;
+
+  // ensure falling block is rendered at player's y position
+  falling.y = PLAYER_Y;
 
   // update left/right movement by encoder
   if (ui.encoderPosition > 0)
@@ -101,17 +110,21 @@ bool PrintItGame::handle_player_input(const bed_t &bed, falling_t &falling, uint
   ui.encoderPosition = 0;
 
   // block movement if it would collide
-  if (dirty && bed.check_collision(player_x, PLAYER_Y) != 0)
+  if (dirty && bed.check_collision(falling.x, falling.y) != 0)
   {
-    player_x = oldX;
+    falling = old;
+    return false;
   }
 
-  // spawn a new falling block when clicking and allowed
-  return (!falling.active && ui.use_click());
+  // spawn a new falling block when clicking
+  return ui.use_click();
 }
 
 bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling)
 {
+  // ignore if not falling
+  if (!falling.is_falling) return false;
+
   // record position before update
   const uint8_t oldY = falling.y;
 
@@ -128,25 +141,9 @@ bool PrintItGame::handle_falling_gravity(const bed_t &bed, falling_t &falling)
   return false;
 }
 
-bool PrintItGame::spawn_falling(const bed_t &bed, const uint8_t x, const uint8_t y, falling_t &falling)
-{
-  if (bed.check_collision(x, y) == 0)
-  {
-    falling.x = x;
-    falling.y = y;
-    falling.active = true;
-    return true;
-  }
-  {
-    // spawning not possible!
-    falling.active = false;
-    return false;
-  }
-}
-
 void PrintItGame::commit_falling(const falling_t &falling, bed_t &bed)
 {
-  if (!falling.active)
+  if (!falling.is_falling)
   {
     return;
   }
@@ -179,16 +176,10 @@ void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const
              (PRINTIT_BED_HEIGHT * BLOCK_SIZE) + 2);
 }
 
-void PrintItGame::draw_player(const uint8_t x, const uint8_t y)
-{
-  set_color(color::BLUE);
-  draw_frame(x, y, BLOCK_SIZE, BLOCK_SIZE);
-}
-
 void PrintItGame::draw_falling(const falling_t &falling)
 {
   set_color(color::RED);
-  draw_box(BED_X + (falling.x * BLOCK_SIZE),
+  draw_frame(BED_X + (falling.x * BLOCK_SIZE),
            BED_Y + (falling.y * BLOCK_SIZE),
            BLOCK_SIZE,
            BLOCK_SIZE);
