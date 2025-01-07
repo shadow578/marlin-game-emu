@@ -130,8 +130,10 @@ void PrintItGame::game_screen()
     show_target_bed = (now - STATE.level_start_millis) < TARGET_SHOW_TIME;
   }
 
+  set_color(color::GREEN);
   draw_bed(TARGET_BED_X, TARGET_BED_Y, target_bed, show_target_bed);
 
+  set_color(color::CYAN);
   if (game_state == GAME_STATE_WELCOME)
   {
     draw_bed(BED_X, BED_Y, target_bed);
@@ -291,7 +293,6 @@ void PrintItGame::draw_bed(const uint8_t screen_x, const uint8_t screen_y, const
 {
   if (draw_blocks)
   {
-    set_color(color::CYAN);
     for (uint8_t x = 0; x < PRINTIT_BED_WIDTH; x++)
     {
       for (uint8_t y = 0; y < PRINTIT_BED_HEIGHT; y++)
