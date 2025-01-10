@@ -22,8 +22,8 @@ constexpr fixed_t OBSTACLE_Y = GROUND_HEIGHT;
 // how strong the player jumps
 constexpr fixed_t JUMP_STRENGTH = FTOF(6);
 
-// how many frames between spawning obstacles
-constexpr uint8_t SPAWN_DELAY = 40;
+// minium x distance between obstacles
+constexpr fixed_t OBSTACLE_DISTANCE = FTOF(GAME_WIDTH / 3);
 
 // position of the score display
 constexpr game_dim_t SCORE_X = 2;
@@ -50,6 +50,7 @@ void DinoGame::enter_game()
   {
     obstacle.type = obstacle_type::NONE;
   }
+  STATE.last_spawned_obstacle_index = 0xff;
 
   score = 0;
 }
@@ -72,8 +73,10 @@ void DinoGame::game_screen()
 
     score++;
 
-    if (score > SPAWN_DELAY || score == 1)
+    // spawn new obstacle if needed
+    if (STATE.last_spawned_obstacle_index == 0xff || (STATE.obstacles[STATE.last_spawned_obstacle_index].x < (FTOF(GAME_WIDTH) - OBSTACLE_DISTANCE)))
     {
+      STATE.last_spawned_obstacle_index = 0;
       for (auto &obstacle : STATE.obstacles)
       {
         if (obstacle.type == obstacle_type::NONE)
@@ -81,6 +84,8 @@ void DinoGame::game_screen()
           spawn_obstacle(obstacle);
           break;
         }
+
+        STATE.last_spawned_obstacle_index++;
       }
     }
   }
@@ -96,15 +101,13 @@ void DinoGame::game_screen()
   // draw the score display
   set_color(color::WHITE);
   draw_string(
-    X_TO_SCREEN(SCORE_X),
-    Y_TO_SCREEN(SCORE_Y),
-    "Score:"
-  );
+      X_TO_SCREEN(SCORE_X),
+      Y_TO_SCREEN(SCORE_Y),
+      "Score:");
   draw_int(
-    X_TO_SCREEN(SCORE_X + (GAME_FONT_WIDTH * 7)),
-    Y_TO_SCREEN(SCORE_Y),
-    score
-  );
+      X_TO_SCREEN(SCORE_X + (GAME_FONT_WIDTH * 7)),
+      Y_TO_SCREEN(SCORE_Y),
+      score);
 
   frame_end();
 }
@@ -136,7 +139,8 @@ void DinoGame::update_player(player_t &player)
   }
 
   // no need to update physics if player is grounded
-  if (player.grounded()) return;
+  if (player.grounded())
+    return;
 
   player.y_velocity -= GRAVITY;
   player.y_position += player.y_velocity;
@@ -198,6 +202,11 @@ void DinoGame::spawn_obstacle(obstacle_t &slot)
 
     slot.type = obstacle_type::NONE;
   }
+
+  if (slot.type == obstacle_type::NONE)
+  {
+    std::cout << "Failed to spawn obstacle" << std::endl;
+  }
 }
 
 void DinoGame::draw_player(const player_t &player)
@@ -215,7 +224,7 @@ void DinoGame::draw_obstacle(const obstacle_t &obstacle)
     return;
 
   set_color(color::RED);
-  
+
   aabb_t box;
   get_obstacle_bounding_box(obstacle, box);
   draw_aabb(box);
@@ -225,7 +234,7 @@ void DinoGame::draw_ground(const uint8_t offset)
 {
   // TODO add variation to the ground using offset
   set_color(color::WHITE);
-  
+
   aabb_t box;
   get_ground_bounding_box(box);
   draw_aabb(box);
@@ -249,7 +258,7 @@ void DinoGame::get_player_bounding_box(const player_t &player, aabb_t &box)
 
 void DinoGame::get_obstacle_bounding_box(const obstacle_t &obstacle, aabb_t &box)
 {
-  const obstacle_info_t* sprite = get_obstacle_info(obstacle.type);
+  const obstacle_info_t *sprite = get_obstacle_info(obstacle.type);
 
   box.x = obstacle.x;
   box.y = OBSTACLE_Y + sprite->height + sprite->y_offset;
@@ -265,7 +274,7 @@ void DinoGame::get_ground_bounding_box(aabb_t &box)
   box.height = FTOF(2);
 }
 
-const DinoGame::obstacle_info_t* DinoGame::get_obstacle_info(obstacle_type type)
+const DinoGame::obstacle_info_t *DinoGame::get_obstacle_info(obstacle_type type)
 {
   return &OBSTACLE_INFO[static_cast<int>(type)];
 }
