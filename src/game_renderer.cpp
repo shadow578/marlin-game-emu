@@ -2,6 +2,8 @@
 #include "compat.h"
 #include "iostream"
 
+constexpr bool print_draw_calls = false;
+
 constexpr bool debug = false;
 #define I(x) static_cast<int>(x)
 
@@ -87,18 +89,19 @@ void MarlinGame::frame_end()
                        + draw_call_cnt.draw_string
                        + draw_call_cnt.draw_int;
 
-  std::cout << "draw: " << frame_draw_time << " ms (wait: " << fwt << " ms);  "
-            << draw_call_cnt.set_color << "x set_color; "
-            << draw_call_cnt.draw_hline << "x hline; "
-            << draw_call_cnt.draw_vline << "x vline; "
-            << draw_call_cnt.draw_frame << "x frame; "
-            << draw_call_cnt.draw_box << "x box; "
-            << draw_call_cnt.draw_pixel << "x pixel; "
-            << draw_call_cnt.draw_bitmap << "x bitmap; "
-            << draw_call_cnt.draw_string << "x string; "
-            << draw_call_cnt.draw_int << "x int; "
-            << total_draw_calls << "x calls total" 
-            << std::endl;
+  if (print_draw_calls)
+    std::cout << "draw: " << frame_draw_time << " ms (wait: " << fwt << " ms);  "
+              << draw_call_cnt.set_color << "x set_color; "
+              << draw_call_cnt.draw_hline << "x hline; "
+              << draw_call_cnt.draw_vline << "x vline; "
+              << draw_call_cnt.draw_frame << "x frame; "
+              << draw_call_cnt.draw_box << "x box; "
+              << draw_call_cnt.draw_pixel << "x pixel; "
+              << draw_call_cnt.draw_bitmap << "x bitmap; "
+              << draw_call_cnt.draw_string << "x string; "
+              << draw_call_cnt.draw_int << "x int; "
+              << total_draw_calls << "x calls total" 
+              << std::endl;
   
   if (debug)
   {

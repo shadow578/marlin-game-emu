@@ -30,6 +30,7 @@
 #include "tennis.h"
 #include "blocks/blocks.h"
 #include "printit/printit.h"
+#include "dino/dino.h"
 #include "../menu.h"
 
 // Pool game data to save SRAM
@@ -41,6 +42,7 @@ union MarlinGameData {
   TennisGame::state_t tennis;
   BlocksGame::state_t blocks;
   PrintItGame::state_t printit;
+  DinoGame::state_t dino;
 };
 
 extern MarlinGameData marlin_game_data;
