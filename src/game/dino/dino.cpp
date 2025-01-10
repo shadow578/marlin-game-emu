@@ -96,7 +96,7 @@ void DinoGame::game_screen()
   }
 
   // update animations
-  if (ui.get_blink())
+  if (ui.get_blink() && game_state == GAME_STATE_RUNNING)
   {
     STATE.player.frame = (STATE.player.frame + 1) % PLAYER_INFO.frames;
 
