@@ -28,16 +28,15 @@ private:
 
   enum class obstacle_type 
   {
-    NONE,
     CACTUS_SMALL,
     CACTUS_LARGE,
-    BIRD
+    BIRD,
+    NONE
   };
 
   struct obstacle_t
   {
     fixed_t x;
-    fixed_t y;
     obstacle_type type;
   };
 
@@ -50,7 +49,9 @@ public:
 
 private:
   static void update_player(player_t &player);
-  static void handle_world_movement();
+  static void update_world(state_t &state);
+
+  static void spawn_obstacle(obstacle_t &slot);
 
   static void draw_player(const player_t &player);
   static void draw_obstacle(const obstacle_t &obstacle);

@@ -20,7 +20,7 @@ constexpr sprite_t PLAYER_SPRITE = {
 constexpr fixed_t GRAVITY = FTOF(0.1f);
 
 // how fast obstacles move towards the player
-constexpr fixed_t OBSTACLE_SPEED = FTOF(0.1f);
+constexpr fixed_t OBSTACLE_SPEED = FTOF(0.8f);
 
 // height of the ground
 constexpr fixed_t GROUND_HEIGHT = FTOF(10);
@@ -53,6 +53,10 @@ void DinoGame::enter_game()
   {
     obstacle.type = obstacle_type::NONE;
   }
+
+  // TODO testing
+  STATE.obstacles[0].x = FTOF(GAME_WIDTH - 10);
+  STATE.obstacles[0].type = obstacle_type::CACTUS_SMALL;
 }
 
 void DinoGame::game_screen()
@@ -69,6 +73,7 @@ void DinoGame::game_screen()
   else if (game_state == GAME_STATE_RUNNING)
   {
     update_player(STATE.player);
+    update_world(STATE);
   }
 
   frame_start();
@@ -108,8 +113,26 @@ void DinoGame::update_player(player_t &player)
   }
 }
 
-void DinoGame::handle_world_movement()
+void DinoGame::update_world(state_t &state)
 {
+  for (auto &obstacle : state.obstacles)
+  {
+    if (obstacle.type == obstacle_type::NONE)
+      continue;
+
+    obstacle.x -= OBSTACLE_SPEED;
+
+    if (obstacle.x < FTOF(0))
+    {
+      spawn_obstacle(obstacle);
+    }
+  }
+}
+
+void DinoGame::spawn_obstacle(obstacle_t &slot)
+{
+  slot.x = FTOF(GAME_WIDTH);
+  slot.type = static_cast<obstacle_type>(random(0, static_cast<int>(obstacle_type::NONE)));
 }
 
 void DinoGame::draw_player(const player_t &player)
@@ -126,9 +149,11 @@ void DinoGame::draw_obstacle(const obstacle_t &obstacle)
   if (obstacle.type == obstacle_type::NONE)
     return;
 
+  std::cout << "Obstacle X: " << PTOF(obstacle.x) << " of type " << static_cast<int>(obstacle.type) << std::endl;
+
   set_color(color::RED);
   draw_box(X_TO_SCREEN(FTOB(obstacle.x)),
-           Y_TO_SCREEN(FTOB(obstacle.y)),
+           Y_TO_SCREEN(FTOB(GROUND_HEIGHT) - 5),
            5,
            5);
 }
