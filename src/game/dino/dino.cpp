@@ -17,20 +17,26 @@ constexpr sprite_t PLAYER_SPRITE = {
 };
 
 // how fast the player accelerates towards the ground
-constexpr fixed_t GRAVITY = FTOF(0.1f);
+constexpr fixed_t GRAVITY = FTOF(0.7f);
 
 // how fast obstacles move towards the player
-constexpr fixed_t OBSTACLE_SPEED = FTOF(0.8f);
+constexpr fixed_t OBSTACLE_SPEED = FTOF(1.5f);
 
 // height of the ground
 constexpr fixed_t GROUND_HEIGHT = FTOF(10);
 
-// idle position of the player
-constexpr fixed_t PLAYER_X = 10;
+// position of the player
+constexpr fixed_t PLAYER_X = FTOF(10);
 constexpr fixed_t PLAYER_IDLE_Y = GROUND_HEIGHT + PLAYER_SPRITE.height;
 
+// position of obstacles
+constexpr fixed_t OBSTACLE_Y = GROUND_HEIGHT;
+
 // how strong the player jumps
-constexpr fixed_t JUMP_STRENGTH = FTOF(3);
+constexpr fixed_t JUMP_STRENGTH = FTOF(6);
+
+// how many frames between spawning obstacles initially
+constexpr uint8_t SPAWN_DELAY = 60;
 
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_WAIT_ON_USER 1
@@ -69,11 +75,28 @@ void DinoGame::game_screen()
   else if (game_state == GAME_STATE_WAIT_ON_USER)
   {
     game_state = GAME_STATE_RUNNING;
+    STATE.ticks = 0;
   }
   else if (game_state == GAME_STATE_RUNNING)
   {
     update_player(STATE.player);
     update_world(STATE);
+
+    STATE.ticks++;
+
+    if (STATE.ticks > SPAWN_DELAY)
+    {
+      STATE.ticks = 0;
+
+      for (auto &obstacle : STATE.obstacles)
+      {
+        if (obstacle.type == obstacle_type::NONE)
+        {
+          spawn_obstacle(obstacle);
+          break;
+        }
+      }
+    }
   }
 
   frame_start();
@@ -87,6 +110,11 @@ void DinoGame::game_screen()
   draw_ground(0);
 
   frame_end();
+}
+
+void DinoGame::on_collision(const player_t &player, const obstacle_t &obstacle)
+{
+  game_state = GAME_STATE_GAME_OVER;
 }
 
 void DinoGame::update_player(player_t &player)
@@ -105,8 +133,12 @@ void DinoGame::update_player(player_t &player)
 
   std::cout << "Player Y: " << PTOF(player.y_position) << "; Player V: " << PTOF(player.y_velocity) << std::endl;
 
-  // did player fall below the ground?
-  if (player.y_position < PLAYER_IDLE_Y)
+  // did player fall into the ground?
+  aabb_t player_box;
+  aabb_t ground_box;
+  get_player_bounding_box(player, player_box);
+  get_ground_bounding_box(ground_box);
+  if (player_box.intersects(ground_box))
   {
     player.y_position = PLAYER_IDLE_Y;
     player.set_grounded();
@@ -115,6 +147,9 @@ void DinoGame::update_player(player_t &player)
 
 void DinoGame::update_world(state_t &state)
 {
+  aabb_t player_box;
+  get_player_bounding_box(state.player, player_box);
+
   for (auto &obstacle : state.obstacles)
   {
     if (obstacle.type == obstacle_type::NONE)
@@ -124,7 +159,17 @@ void DinoGame::update_world(state_t &state)
 
     if (obstacle.x < FTOF(0))
     {
-      spawn_obstacle(obstacle);
+      //spawn_obstacle(obstacle);
+      obstacle.type = obstacle_type::NONE;
+      continue;
+    }
+
+    // test collision
+    aabb_t obstacle_box;
+    get_obstacle_bounding_box(obstacle, obstacle_box);
+    if (player_box.intersects(obstacle_box))
+    {
+      on_collision(state.player, obstacle);
     }
   }
 }
@@ -138,10 +183,10 @@ void DinoGame::spawn_obstacle(obstacle_t &slot)
 void DinoGame::draw_player(const player_t &player)
 {
   set_color(color::BLUE);
-  draw_box(X_TO_SCREEN(PLAYER_X),
-           Y_TO_SCREEN(FTOB(player.y_position)),
-           FTOB(PLAYER_SPRITE.width),
-           FTOB(PLAYER_SPRITE.height));
+
+  aabb_t box;
+  get_player_bounding_box(player, box);
+  draw_aabb(box);
 }
 
 void DinoGame::draw_obstacle(const obstacle_t &obstacle)
@@ -149,22 +194,53 @@ void DinoGame::draw_obstacle(const obstacle_t &obstacle)
   if (obstacle.type == obstacle_type::NONE)
     return;
 
-  std::cout << "Obstacle X: " << PTOF(obstacle.x) << " of type " << static_cast<int>(obstacle.type) << std::endl;
-
   set_color(color::RED);
-  draw_box(X_TO_SCREEN(FTOB(obstacle.x)),
-           Y_TO_SCREEN(FTOB(GROUND_HEIGHT) - 5),
-           5,
-           5);
+  
+  aabb_t box;
+  get_obstacle_bounding_box(obstacle, box);
+  draw_aabb(box);
 }
 
 void DinoGame::draw_ground(const uint8_t offset)
 {
   // TODO add variation to the ground using offset
   set_color(color::WHITE);
-  draw_hline(0,
-           Y_TO_SCREEN(FTOB(GROUND_HEIGHT)),
-           GAME_WIDTH);
+  
+  aabb_t box;
+  get_ground_bounding_box(box);
+  draw_aabb(box);
+}
+
+void DinoGame::draw_aabb(const aabb_t &box)
+{
+  draw_box(X_TO_SCREEN(FTOB(box.x)),
+           Y_TO_SCREEN(FTOB(box.y)),
+           FTOB(box.width),
+           FTOB(box.height));
+}
+
+void DinoGame::get_player_bounding_box(const player_t &player, aabb_t &box)
+{
+  box.x = PLAYER_X;
+  box.y = player.y_position;
+  box.width = PLAYER_SPRITE.width;
+  box.height = PLAYER_SPRITE.height;
+}
+
+void DinoGame::get_obstacle_bounding_box(const obstacle_t &obstacle, aabb_t &box)
+{
+  box.x = obstacle.x;
+  box.y = OBSTACLE_Y + FTOF(5);
+  box.width = FTOF(5);
+  box.height = FTOF(5);
+}
+
+void DinoGame::get_ground_bounding_box(aabb_t &box)
+{
+  box.x = FTOF(0);
+  box.y = GROUND_HEIGHT;
+  box.width = FTOF(GAME_WIDTH);
+  box.height = FTOF(2);
 }
 
 #endif // MARLIN_DINO
