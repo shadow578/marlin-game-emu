@@ -56,12 +56,27 @@ private:
     }
   };
 
+  struct player_info_t
+  {
+    // bitmap_t shape;
+    fixed_t width;
+    fixed_t height;
+  };
+
+  struct obstacle_info_t
+  {
+    fixed_t width;
+    fixed_t height;
+    fixed_t y_offset;
+    int min_score;
+    // bitmap_t shape;
+  };
+
 public:
   struct state_t
   {
     player_t player;
     obstacle_t obstacles[4];
-    uint8_t ticks;
   };
 
 private:
@@ -82,6 +97,11 @@ private:
   static void get_player_bounding_box(const player_t &player, aabb_t &box);
   static void get_obstacle_bounding_box(const obstacle_t &obstacle, aabb_t &box);
   static void get_ground_bounding_box(aabb_t &box);
+
+  static const player_info_t PLAYER_INFO;
+  static const obstacle_info_t OBSTACLE_INFO[static_cast<int>(obstacle_type::NONE)];
+
+  static const obstacle_info_t* get_obstacle_info(const obstacle_type type);
 };
 
 extern DinoGame dino_game;

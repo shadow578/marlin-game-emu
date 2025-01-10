@@ -4,18 +4,6 @@
 
 #include "../game.h"
 
-struct sprite_t
-{
-  // bitmap_t shape;
-  fixed_t width;
-  fixed_t height;
-};
-
-constexpr sprite_t PLAYER_SPRITE = {
-  .width = FTOF(5),
-  .height = FTOF(5),
-};
-
 // how fast the player accelerates towards the ground
 constexpr fixed_t GRAVITY = FTOF(0.7f);
 
@@ -27,7 +15,6 @@ constexpr fixed_t GROUND_HEIGHT = FTOF(10);
 
 // position of the player
 constexpr fixed_t PLAYER_X = FTOF(10);
-constexpr fixed_t PLAYER_IDLE_Y = GROUND_HEIGHT + PLAYER_SPRITE.height;
 
 // position of obstacles
 constexpr fixed_t OBSTACLE_Y = GROUND_HEIGHT;
@@ -35,8 +22,8 @@ constexpr fixed_t OBSTACLE_Y = GROUND_HEIGHT;
 // how strong the player jumps
 constexpr fixed_t JUMP_STRENGTH = FTOF(6);
 
-// how many frames between spawning obstacles initially
-constexpr uint8_t SPAWN_DELAY = 60;
+// how many frames between spawning obstacles
+constexpr uint8_t SPAWN_DELAY = 40;
 
 // position of the score display
 constexpr game_dim_t SCORE_X = 2;
@@ -56,17 +43,15 @@ void DinoGame::enter_game()
   init_game(GAME_STATE_WAIT_ON_USER, game_screen);
 
   // reset state
-  STATE.player.y_position = PLAYER_IDLE_Y;
-  STATE.player.y_velocity = 0;
+  STATE.player.y_position = GROUND_HEIGHT + PLAYER_INFO.height;
+  STATE.player.y_velocity = FTOF(0);
 
   for (auto &obstacle : STATE.obstacles)
   {
     obstacle.type = obstacle_type::NONE;
   }
 
-  // TODO testing
-  STATE.obstacles[0].x = FTOF(GAME_WIDTH - 10);
-  STATE.obstacles[0].type = obstacle_type::CACTUS_SMALL;
+  score = 0;
 }
 
 void DinoGame::game_screen()
@@ -79,19 +64,16 @@ void DinoGame::game_screen()
   else if (game_state == GAME_STATE_WAIT_ON_USER)
   {
     game_state = GAME_STATE_RUNNING;
-    STATE.ticks = 0;
   }
   else if (game_state == GAME_STATE_RUNNING)
   {
     update_player(STATE.player);
     update_world(STATE);
 
-    STATE.ticks++;
+    score++;
 
-    if (STATE.ticks > SPAWN_DELAY)
+    if (score > SPAWN_DELAY || score == 1)
     {
-      STATE.ticks = 0;
-
       for (auto &obstacle : STATE.obstacles)
       {
         if (obstacle.type == obstacle_type::NONE)
@@ -168,7 +150,7 @@ void DinoGame::update_player(player_t &player)
   get_ground_bounding_box(ground_box);
   if (player_box.intersects(ground_box))
   {
-    player.y_position = PLAYER_IDLE_Y;
+    player.y_position = GROUND_HEIGHT + player_box.height;
     player.set_grounded();
   }
 }
@@ -205,7 +187,17 @@ void DinoGame::update_world(state_t &state)
 void DinoGame::spawn_obstacle(obstacle_t &slot)
 {
   slot.x = FTOF(GAME_WIDTH);
-  slot.type = static_cast<obstacle_type>(random(0, static_cast<int>(obstacle_type::NONE)));
+
+  for (uint8_t i = 0; i < 10; i++)
+  {
+    slot.type = static_cast<obstacle_type>(random(0, static_cast<int>(obstacle_type::NONE)));
+
+    // ensure this type can spawn
+    if (get_obstacle_info(slot.type)->min_score <= score)
+      break;
+
+    slot.type = obstacle_type::NONE;
+  }
 }
 
 void DinoGame::draw_player(const player_t &player)
@@ -251,16 +243,18 @@ void DinoGame::get_player_bounding_box(const player_t &player, aabb_t &box)
 {
   box.x = PLAYER_X;
   box.y = player.y_position;
-  box.width = PLAYER_SPRITE.width;
-  box.height = PLAYER_SPRITE.height;
+  box.width = PLAYER_INFO.width;
+  box.height = PLAYER_INFO.height;
 }
 
 void DinoGame::get_obstacle_bounding_box(const obstacle_t &obstacle, aabb_t &box)
 {
+  const obstacle_info_t* sprite = get_obstacle_info(obstacle.type);
+
   box.x = obstacle.x;
-  box.y = OBSTACLE_Y + FTOF(5);
-  box.width = FTOF(5);
-  box.height = FTOF(5);
+  box.y = OBSTACLE_Y + sprite->height + sprite->y_offset;
+  box.width = sprite->width;
+  box.height = sprite->height;
 }
 
 void DinoGame::get_ground_bounding_box(aabb_t &box)
@@ -269,6 +263,11 @@ void DinoGame::get_ground_bounding_box(aabb_t &box)
   box.y = GROUND_HEIGHT;
   box.width = FTOF(GAME_WIDTH);
   box.height = FTOF(2);
+}
+
+const DinoGame::obstacle_info_t* DinoGame::get_obstacle_info(obstacle_type type)
+{
+  return &OBSTACLE_INFO[static_cast<int>(type)];
 }
 
 #endif // MARLIN_DINO
