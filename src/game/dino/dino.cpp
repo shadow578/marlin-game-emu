@@ -38,6 +38,10 @@ constexpr fixed_t JUMP_STRENGTH = FTOF(6);
 // how many frames between spawning obstacles initially
 constexpr uint8_t SPAWN_DELAY = 60;
 
+// position of the score display
+constexpr game_dim_t SCORE_X = 2;
+constexpr game_dim_t SCORE_Y = GAME_HEIGHT - 2;
+
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_WAIT_ON_USER 1
 #define GAME_STATE_RUNNING 2
@@ -100,16 +104,39 @@ void DinoGame::game_screen()
   }
 
   frame_start();
+  draw_ground(0);
   draw_player(STATE.player);
-
   for (const auto &obstacle : STATE.obstacles)
   {
     draw_obstacle(obstacle);
   }
 
-  draw_ground(0);
+  // draw the score display
+  set_color(color::WHITE);
+  draw_string(
+    X_TO_SCREEN(SCORE_X),
+    Y_TO_SCREEN(SCORE_Y),
+    "Score:"
+  );
+  draw_int(
+    X_TO_SCREEN(SCORE_X + (GAME_FONT_WIDTH * 7)),
+    Y_TO_SCREEN(SCORE_Y),
+    score
+  );
 
   frame_end();
+}
+
+void DinoGame::on_jump()
+{
+  _BUZZ(5, 280);
+}
+
+void DinoGame::on_obstacle_despawn(obstacle_t &obstacle)
+{
+  score += 10;
+
+  std::cout << "Obstacle despawn type: " << static_cast<int>(obstacle.type) << std::endl;
 }
 
 void DinoGame::on_collision(const player_t &player, const obstacle_t &obstacle)
@@ -123,6 +150,7 @@ void DinoGame::update_player(player_t &player)
   if (ui.use_click() && player.grounded())
   {
     player.y_velocity += JUMP_STRENGTH;
+    on_jump();
   }
 
   // no need to update physics if player is grounded
@@ -159,7 +187,7 @@ void DinoGame::update_world(state_t &state)
 
     if (obstacle.x < FTOF(0))
     {
-      //spawn_obstacle(obstacle);
+      on_obstacle_despawn(obstacle);
       obstacle.type = obstacle_type::NONE;
       continue;
     }

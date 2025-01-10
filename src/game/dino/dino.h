@@ -65,6 +65,8 @@ public:
   };
 
 private:
+  static void on_jump();
+  static void on_obstacle_despawn(obstacle_t &obstacle);
   static void on_collision(const player_t &player, const obstacle_t &obstacle);
 
   static void update_player(player_t &player);
