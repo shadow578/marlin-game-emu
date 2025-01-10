@@ -12,6 +12,7 @@ public:
 private:
   struct player_t
   {
+    uint8_t frame;
     fixed_t y_position;
     fixed_t y_velocity;
 
@@ -36,6 +37,7 @@ private:
 
   struct obstacle_t
   {
+    uint8_t frame;
     fixed_t x;
     obstacle_type type;
   };
@@ -56,20 +58,19 @@ private:
     }
   };
 
-  struct player_info_t
+  struct sprite_info_t
   {
-    // bitmap_t shape;
-    fixed_t width;
-    fixed_t height;
+    const uint8_t** sprite;
+    uint8_t frames;
+    game_dim_t width;
+    game_dim_t height;
   };
 
   struct obstacle_info_t
   {
-    fixed_t width;
-    fixed_t height;
+    sprite_info_t sprite;
     fixed_t y_offset;
     int min_score;
-    // bitmap_t shape;
   };
 
 public:
@@ -99,7 +100,7 @@ private:
   static void get_obstacle_bounding_box(const obstacle_t &obstacle, aabb_t &box);
   static void get_ground_bounding_box(aabb_t &box);
 
-  static const player_info_t PLAYER_INFO;
+  static const sprite_info_t PLAYER_INFO;
   static const obstacle_info_t OBSTACLE_INFO[static_cast<int>(obstacle_type::NONE)];
 
   static const obstacle_info_t* get_obstacle_info(const obstacle_type type);

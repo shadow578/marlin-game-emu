@@ -5,7 +5,7 @@
 #include "../game.h"
 
 // how fast the player accelerates towards the ground
-constexpr fixed_t GRAVITY = FTOF(0.7f);
+constexpr fixed_t GRAVITY = FTOF(0.6f);
 
 // how fast obstacles move towards the player
 constexpr fixed_t OBSTACLE_SPEED = FTOF(1.5f);
@@ -43,7 +43,7 @@ void DinoGame::enter_game()
   init_game(GAME_STATE_WAIT_ON_USER, game_screen);
 
   // reset state
-  STATE.player.y_position = GROUND_HEIGHT + PLAYER_INFO.height;
+  STATE.player.y_position = GROUND_HEIGHT + FTOF(PLAYER_INFO.height);
   STATE.player.y_velocity = FTOF(0);
 
   for (auto &obstacle : STATE.obstacles)
@@ -90,6 +90,20 @@ void DinoGame::game_screen()
     }
   }
 
+  // update animations
+  if (ui.get_blink())
+  {
+    STATE.player.frame = (STATE.player.frame + 1) % PLAYER_INFO.frames;
+
+    for (auto &obstacle : STATE.obstacles)
+    {
+      if (obstacle.type != obstacle_type::NONE)
+      {
+        obstacle.frame = (obstacle.frame + 1) % get_obstacle_info(obstacle.type)->sprite.frames;
+      }
+    }
+  }
+
   frame_start();
   draw_ground(0);
   draw_player(STATE.player);
@@ -127,6 +141,8 @@ void DinoGame::on_obstacle_despawn(obstacle_t &obstacle)
 void DinoGame::on_collision(const player_t &player, const obstacle_t &obstacle)
 {
   game_state = GAME_STATE_GAME_OVER;
+
+  std::cout << "collision with type: " << static_cast<int>(obstacle.type) << " @ " << PTOF(obstacle.x) << std::endl;
 }
 
 void DinoGame::update_player(player_t &player)
@@ -191,6 +207,7 @@ void DinoGame::update_world(state_t &state)
 void DinoGame::spawn_obstacle(obstacle_t &slot)
 {
   slot.x = FTOF(GAME_WIDTH);
+  slot.frame = 0;
 
   for (uint8_t i = 0; i < 10; i++)
   {
@@ -213,9 +230,16 @@ void DinoGame::draw_player(const player_t &player)
 {
   set_color(color::BLUE);
 
-  aabb_t box;
-  get_player_bounding_box(player, box);
-  draw_aabb(box);
+  draw_bitmap(
+      X_TO_SCREEN(FTOB(PLAYER_X)),
+      Y_TO_SCREEN(FTOB(player.y_position)),
+      PLAYER_INFO.width / 8,
+      PLAYER_INFO.height,
+      PLAYER_INFO.sprite[player.frame]);
+
+  //aabb_t box;
+  //get_player_bounding_box(player, box);
+  //draw_aabb(box);
 }
 
 void DinoGame::draw_obstacle(const obstacle_t &obstacle)
@@ -225,9 +249,17 @@ void DinoGame::draw_obstacle(const obstacle_t &obstacle)
 
   set_color(color::RED);
 
-  aabb_t box;
-  get_obstacle_bounding_box(obstacle, box);
-  draw_aabb(box);
+  const obstacle_info_t *info = get_obstacle_info(obstacle.type);
+  draw_bitmap(
+      X_TO_SCREEN(FTOB(obstacle.x)),
+      Y_TO_SCREEN(FTOB(OBSTACLE_Y + FTOF(info->sprite.height) + info->y_offset)),
+      1, // TODO assumes all sprites are 8xn ;; info->sprite.width / 8,
+      info->sprite.height,
+      info->sprite.sprite[obstacle.frame]);
+
+  //aabb_t box;
+  //get_obstacle_bounding_box(obstacle, box);
+  //draw_aabb(box);
 }
 
 void DinoGame::draw_ground(const uint8_t offset)
@@ -242,28 +274,28 @@ void DinoGame::draw_ground(const uint8_t offset)
 
 void DinoGame::draw_aabb(const aabb_t &box)
 {
-  draw_box(X_TO_SCREEN(FTOB(box.x)),
-           Y_TO_SCREEN(FTOB(box.y)),
-           FTOB(box.width),
-           FTOB(box.height));
+  draw_frame(X_TO_SCREEN(FTOB(box.x)),
+             Y_TO_SCREEN(FTOB(box.y)),
+             FTOB(box.width),
+             FTOB(box.height));
 }
 
 void DinoGame::get_player_bounding_box(const player_t &player, aabb_t &box)
 {
   box.x = PLAYER_X;
   box.y = player.y_position;
-  box.width = PLAYER_INFO.width;
-  box.height = PLAYER_INFO.height;
+  box.width = FTOF(PLAYER_INFO.width);
+  box.height = FTOF(PLAYER_INFO.height);
 }
 
 void DinoGame::get_obstacle_bounding_box(const obstacle_t &obstacle, aabb_t &box)
 {
-  const obstacle_info_t *sprite = get_obstacle_info(obstacle.type);
+  const obstacle_info_t *info = get_obstacle_info(obstacle.type);
 
   box.x = obstacle.x;
-  box.y = OBSTACLE_Y + sprite->height + sprite->y_offset;
-  box.width = sprite->width;
-  box.height = sprite->height;
+  box.y = OBSTACLE_Y + FTOF(info->sprite.height) + info->y_offset;
+  box.width = FTOF(info->sprite.width);
+  box.height = FTOF(info->sprite.height);
 }
 
 void DinoGame::get_ground_bounding_box(aabb_t &box)
