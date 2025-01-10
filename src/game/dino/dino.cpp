@@ -22,8 +22,9 @@ constexpr fixed_t OBSTACLE_Y = GROUND_HEIGHT;
 // how strong the player jumps
 constexpr fixed_t JUMP_STRENGTH = FTOF(6);
 
-// minium x distance between obstacles
-constexpr fixed_t OBSTACLE_DISTANCE = FTOF(GAME_WIDTH / 3);
+// x distance between obstacles, randomly chosen between these values
+constexpr fixed_t OBSTACLE_DISTANCE_MIN = FTOF(GAME_WIDTH / 4.0f);
+constexpr fixed_t OBSTACLE_DISTANCE_MAX = FTOF(GAME_WIDTH / 2.0f);
 
 // position of the score display
 constexpr game_dim_t SCORE_X = 2;
@@ -74,7 +75,7 @@ void DinoGame::game_screen()
     score++;
 
     // spawn new obstacle if needed
-    if (STATE.last_spawned_obstacle_index == 0xff || (STATE.obstacles[STATE.last_spawned_obstacle_index].x < (FTOF(GAME_WIDTH) - OBSTACLE_DISTANCE)))
+    if (STATE.last_spawned_obstacle_index == 0xff || (STATE.obstacles[STATE.last_spawned_obstacle_index].x < (FTOF(GAME_WIDTH) - STATE.next_spawn_distance)))
     {
       STATE.last_spawned_obstacle_index = 0;
       for (auto &obstacle : STATE.obstacles)
@@ -82,6 +83,10 @@ void DinoGame::game_screen()
         if (obstacle.type == obstacle_type::NONE)
         {
           spawn_obstacle(obstacle);
+
+          STATE.next_spawn_distance = random(OBSTACLE_DISTANCE_MIN, OBSTACLE_DISTANCE_MAX);
+
+          std::cout << "next spawn in " << PTOF(STATE.next_spawn_distance) << std::endl;
           break;
         }
 

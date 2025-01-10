@@ -79,6 +79,7 @@ public:
     player_t player;
     obstacle_t obstacles[4];
     uint8_t last_spawned_obstacle_index;
+    fixed_t next_spawn_distance;
   };
 
 private:
