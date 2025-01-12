@@ -22,7 +22,10 @@ private:
 
     vec2d_t operator*(const fixed_t scalar) const
     {
-      return vec2d_t::from(x * scalar, y * scalar);
+      return vec2d_t::from(
+        FTOF(PTOF(x) * PTOF(scalar)), 
+        FTOF(PTOF(y) * PTOF(scalar))
+      );
     }
 
     static vec2d_t from(const fixed_t x, const fixed_t y)
@@ -58,7 +61,7 @@ private:
   struct player_t
   {
     vec2d_t pos;
-    fixed_t rotation; // rotation in radians
+    fixed_t rotation; // rotation in degrees
   };
 
 public:
