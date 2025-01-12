@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <cstdlib>
 #include <windows.h>
+#include <math.h>
 
 #define GAME_FONT_WIDTH 1
 #define GAME_FONT_ASCENT 1

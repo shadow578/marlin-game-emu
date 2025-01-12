@@ -31,6 +31,7 @@
 #include "blocks/blocks.h"
 #include "printit/printit.h"
 #include "dino/dino.h"
+#include "maze/maze.h"
 #include "../menu.h"
 
 // Pool game data to save SRAM
@@ -43,6 +44,7 @@ union MarlinGameData {
   BlocksGame::state_t blocks;
   PrintItGame::state_t printit;
   DinoGame::state_t dino;
+  MazeGame::state_t maze;
 };
 
 extern MarlinGameData marlin_game_data;
