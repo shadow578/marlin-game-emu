@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define GAME_FONT_WIDTH 1
-#define GAME_FONT_ASCENT 1
+#define GAME_FONT_ASCENT 2
 #define GAME_WIDTH 128
 #define GAME_HEIGHT 64
 

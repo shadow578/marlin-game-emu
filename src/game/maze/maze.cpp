@@ -6,32 +6,33 @@
 
 
 // renderer parameters
-constexpr fixed_t PLAYER_FOV = FTOF(3.14159f / 3.0f);
-constexpr fixed_t FAR_CLIPPING_PLANE = FTOF(32.0f);
-constexpr fixed_t RENDER_STEP_SIZE = FTOF(0.1f);
-constexpr fixed_t RENDER_WIDTH = BTOF(GAME_WIDTH);
-constexpr fixed_t RENDER_HEIGHT = BTOF(GAME_HEIGHT);
+constexpr float PI = 3.14159f;
+constexpr float PLAYER_FOV = PI / 3.0f;
+constexpr float FAR_CLIPPING_PLANE = 32.0f;
+constexpr float CELL_CORNER_EPSILON = 0.075f;
+constexpr float RENDER_STEP_SIZE = 0.1f;
+constexpr float RENDER_WIDTH = GAME_WIDTH;
+constexpr float RENDER_HEIGHT = GAME_HEIGHT;
 
 // player controls
-constexpr fixed_t PLAYER_STEP_SIZE = FTOF(0.1f);
-constexpr fixed_t PLAYER_ROTATION_SPEED = FTOF(0.05f);
+constexpr float PLAYER_STEP_SIZE = 0.1f;
+constexpr float PLAYER_ROTATION_SPEED = 0.05f;
 
 
-inline fixed_t sinff(const fixed_t x)
+//inline float sinf(const float x)
+//{
+//  return sin(x);
+//}
+//
+//inline float cosf(const float x)
+//{
+//  return cos(x);
+//}
+
+inline bool equals_approx(const float n, const float m, const float epsilon)
 {
-  return FTOF(sin(PTOF(x)));
+  return fabs(n - m) < epsilon;
 }
-
-inline fixed_t cosff(const fixed_t x)
-{
-  return FTOF(cos(PTOF(x)));
-}
-
-inline fixed_t deg_to_rad(const fixed_t deg)
-{
-  return FTOF(PTOF(deg) * (3.14159f / 180.0f));
-}
-
 
 #define GAME_STATE_GAME_OVER 0
 #define GAME_STATE_RUNNING 1
@@ -44,8 +45,8 @@ void MazeGame::enter_game()
 
   // reset state
   STATE.world = 0;
-  STATE.player.pos = vec2d_t::from(FTOF(2), FTOF(3));
-  STATE.player.rotation = FTOF(0);
+  STATE.player.pos = vec2d_t::from(2, 3);
+  STATE.player.rotation = 0;
 }
 
 void MazeGame::game_screen()
@@ -59,16 +60,22 @@ void MazeGame::game_screen()
   {
     if (ui.use_click())
     {
-      const fixed_t rot = deg_to_rad(STATE.player.rotation);
-      const vec2d_t dir = vec2d_t::from(sinff(rot), cosff(rot));
+      const vec2d_t dir = vec2d_t::from(sinf(STATE.player.rotation), cosf(STATE.player.rotation));
       STATE.player.pos = STATE.player.pos + (dir * PLAYER_STEP_SIZE);
     }
 
     ui.encoderPosition = constrain(ui.encoderPosition, -1, 1);
-    STATE.player.rotation += BTOF(ui.encoderPosition) * PLAYER_ROTATION_SPEED;
+    STATE.player.rotation += ui.encoderPosition * PLAYER_ROTATION_SPEED;
     ui.encoderPosition = 0;
 
-    std::cout << "pos=" << PTOF(STATE.player.pos.x) << " " << PTOF(STATE.player.pos.y) << " rot=" << PTOF(STATE.player.rotation) << std::endl;
+    while (STATE.player.rotation > 2 * PI)
+      STATE.player.rotation -= 2 * PI;
+    while (STATE.player.rotation < 0)
+      STATE.player.rotation += 2 * PI;
+
+    //std::cout << "pos=" << STATE.player.pos.x << " " << STATE.player.pos.y << " rot=" << STATE.player.rotation << std::endl;
+  
+    draw_world_to_console(get_world(), STATE.player);
   }
 
   frame_start();
@@ -76,9 +83,9 @@ void MazeGame::game_screen()
   set_color(color::WHITE);
   draw_world(get_world(), STATE.player);
 
-  draw_int(0, 0, FTOB(STATE.player.pos.x));
-  draw_int(0, GAME_FONT_ASCENT, FTOB(STATE.player.pos.y));
-  draw_int(0, GAME_FONT_ASCENT*2, FTOB(STATE.player.rotation));
+  draw_int(0, 0, STATE.player.pos.x);
+  draw_int(0, GAME_FONT_ASCENT, STATE.player.pos.y);
+  draw_int(0, GAME_FONT_ASCENT*2, STATE.player.rotation);
 
   frame_end();
 }
@@ -88,19 +95,20 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
   for(uint8_t x = 0; x < GAME_WIDTH; x++)
   {
     // calculate ray projection angle
-    const fixed_t eye_angle = (deg_to_rad(player.rotation) - (PLAYER_FOV / FTOF(2))) + (BTOF(x) / RENDER_WIDTH) * PLAYER_FOV;
-    const vec2d_t eye_dir = vec2d_t::from(cosff(eye_angle), sinff(eye_angle));
+    const float eye_angle = (player.rotation - (PLAYER_FOV / 2.0f)) + (static_cast<float>(x) / RENDER_WIDTH) * PLAYER_FOV;
+    const vec2d_t eye_dir = vec2d_t::from(sinf(eye_angle), cosf(eye_angle));
 
     // cast a ray from the player until it hits a wall or reaches the far clipping plane
-    fixed_t distance = FTOF(0);
+    float distance = 0.0f;
     bool hit = false;
+    bool is_cell_corner = false;
     while(distance < FAR_CLIPPING_PLANE)
     {
       distance += RENDER_STEP_SIZE;
 
       const vec2d_t pos = player.pos + (eye_dir * distance);
-      const uint8_t cell_x = FTOB(pos.x);
-      const uint8_t cell_y = FTOB(pos.y);
+      const uint8_t cell_x = pos.x;
+      const uint8_t cell_y = pos.y;
 
       //std::cout << "ppos=" << PTOF(player.pos.x) << " " << PTOF(player.pos.y) << std::endl;
       //std::cout << "ed=" << PTOF(eye_dir.x) << " " << PTOF(eye_dir.y) << std::endl;
@@ -115,6 +123,40 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
       if (world->get(cell_x, cell_y))
       {
         hit = true;
+
+        // is the corner of a cell?
+        //is_cell_corner = equals_approx(
+        //  pos.x,
+        //  cell_x,
+        //  CELL_CORNER_EPSILON
+        //) && equals_approx(
+        //  pos.y,
+        //  cell_y,
+        //  CELL_CORNER_EPSILON
+        //);
+
+        // calculate texture coordinates
+        const vec2d_t mid = vec2d_t::from(cell_x + 0.5f, cell_y + 0.5f);
+        const float a = atan2f(pos.y - mid.y, pos.x - mid.x);
+
+        float sx = 0.0f;
+        if (a >= -PI * 0.25f && a < PI * 0.25f) sx = pos.y - cell_y;
+        else if (a >= PI * 0.25f && a < PI * 0.75f) sx = pos.x - cell_x;
+        else if (a >= PI * 0.75f || a < -PI * 0.75f) sx = pos.y - cell_y;
+        else if (a >= -PI * 0.75f && a < -PI * 0.25f) sx = pos.x - cell_x;
+
+
+        // is the corner of a cell?
+        is_cell_corner = equals_approx(
+          sx,
+          0,
+          CELL_CORNER_EPSILON
+        ) || equals_approx(
+          sx,
+          1,
+          CELL_CORNER_EPSILON
+        );
+
         break;
       }
     }
@@ -122,23 +164,54 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
     // had a hit?
     if (!hit) continue;
 
-    // calculate wall points
-    const float ceiling = (PTOF(RENDER_HEIGHT) / 2.0f) - (PTOF(RENDER_HEIGHT) / PTOF(distance));
-    const float floor = PTOF(RENDER_HEIGHT) - ceiling;
+    // calculate wall start and end points
+    const game_dim_t ceiling = _MAX(0, (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance));
+    const game_dim_t floor = static_cast<game_dim_t>(RENDER_HEIGHT) - ceiling;
 
-    // draw to the screen
-    const uint8_t floor_y = (int)floor;
-    const uint8_t ceiling_y = (int)ceiling;
 
     //std::cout << "d=" << PTOF(distance) << " x=" << (int)x << " cy=" << (int)ceiling_y << " fy=" << (int)floor_y << std::endl;
 
-    //draw_vline(x, ceiling_y, floor_y-ceiling_y);
-    draw_pixel(x, ceiling_y);
-    draw_pixel(x, floor_y);
+
+    if (is_cell_corner)
+    {
+      const game_dim_t h = _MIN(floor - ceiling, static_cast<game_dim_t>(RENDER_HEIGHT) - ceiling);
+      draw_vline(x, ceiling, h);
+    }
+    else
+    {
+      draw_pixel(x, ceiling);
+      draw_pixel(x, floor);
+    }
   }
 }
 
+void MazeGame::draw_world_to_console(const world_t *world, const player_t &player)
+{
+  for (int x = 0; x < world->width; x++)
+  {
+    for (int y = 0; y < world->height; y++)
+    {
+      if (x == (int)player.pos.x && y == (int)player.pos.y)
+      {
+        const char* c[] = { "↘", "↓", "↙", "←", "↖", "↑", "↗", "→" };
+        int rot = static_cast<int>((player.rotation / (2 * PI)) * COUNT(c)) % COUNT(c);
+        std::cout << " " << c[rot] << " ";
+      }
+      else if (world->get(x, y))
+      {
+        std::cout << "███";
+      }
+      else
+      {
+        std::cout << "   ";
+      }
+    }
 
+    std::cout << '\n';
+  }
+
+  std::cout << std::endl;
+}
 
 const MazeGame::world_t* MazeGame::get_world()
 {

@@ -12,23 +12,23 @@ public:
 private:
   struct vec2d_t
   {
-    fixed_t x;
-    fixed_t y;
+    float x;
+    float y;
 
     vec2d_t operator+(const vec2d_t &other) const
     {
       return vec2d_t::from(x + other.x, y + other.y);
     }
 
-    vec2d_t operator*(const fixed_t scalar) const
+    vec2d_t operator*(const float scalar) const
     {
       return vec2d_t::from(
-        FTOF(PTOF(x) * PTOF(scalar)), 
-        FTOF(PTOF(y) * PTOF(scalar))
+        x * scalar,
+        y * scalar
       );
     }
 
-    static vec2d_t from(const fixed_t x, const fixed_t y)
+    static vec2d_t from(const float x, const float y)
     {
       return { x, y };
     }
@@ -61,7 +61,7 @@ private:
   struct player_t
   {
     vec2d_t pos;
-    fixed_t rotation; // rotation in degrees
+    float rotation; // rotation in radians
   };
 
 public:
@@ -74,6 +74,7 @@ public:
 private:
 
   static void draw_world(const world_t *world, const player_t &player);
+  static void draw_world_to_console(const world_t *world, const player_t &player);
 
 
   const static world_t WORLDS[1];
