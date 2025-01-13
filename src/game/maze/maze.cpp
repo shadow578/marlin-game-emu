@@ -8,11 +8,12 @@
 // renderer parameters
 constexpr float PI = 3.14159f;
 constexpr float PLAYER_FOV = PI / 3.0f;
+constexpr float NEAR_CLIPPING_PLANE = 0.1f;
 constexpr float FAR_CLIPPING_PLANE = 32.0f;
 constexpr float CELL_CORNER_EPSILON = 0.075f;
 constexpr float RENDER_STEP_SIZE = 0.1f;
 constexpr float RENDER_WIDTH = GAME_WIDTH;
-constexpr float RENDER_HEIGHT = GAME_HEIGHT;
+constexpr float RENDER_HEIGHT = GAME_HEIGHT - 1;
 
 // player controls
 constexpr float PLAYER_STEP_SIZE = 0.1f;
@@ -40,6 +41,8 @@ void MazeGame::enter_game()
 
 void MazeGame::game_screen()
 {
+  const world_t *world = get_world();
+
   if (game_state == GAME_STATE_GAME_OVER)
   {
     if (ui.use_click())
@@ -47,34 +50,49 @@ void MazeGame::game_screen()
   }
   else if (game_state == GAME_STATE_RUNNING)
   {
-    if (ui.use_click())
-    {
-      const vec2d_t dir = vec2d_t::from(sinf(STATE.player.rotation), cosf(STATE.player.rotation));
-      STATE.player.pos = STATE.player.pos + (dir * PLAYER_STEP_SIZE);
-    }
-
-    ui.encoderPosition = constrain(ui.encoderPosition, -1, 1);
-    STATE.player.rotation += ui.encoderPosition * PLAYER_ROTATION_SPEED;
-    ui.encoderPosition = 0;
-
-    while (STATE.player.rotation > 2 * PI)
-      STATE.player.rotation -= 2 * PI;
-    while (STATE.player.rotation < 0)
-      STATE.player.rotation += 2 * PI;
-  
-    draw_world_to_console(get_world(), STATE.player);
+    update_player(world, STATE.player);
   }
+
+  draw_world_to_console(world, STATE.player);
 
   frame_start();
 
-  set_color(color::WHITE);
-  draw_world(get_world(), STATE.player);
+  set_color(color::BLUE);
+  draw_world(world, STATE.player);
 
   draw_int(0, 0, STATE.player.pos.x);
   draw_int(0, GAME_FONT_ASCENT, STATE.player.pos.y);
   draw_int(0, GAME_FONT_ASCENT*2, STATE.player.rotation);
 
   frame_end();
+}
+
+void MazeGame::update_player(const world_t *world, player_t &player)
+{
+  // move one step forward for each click
+  if (ui.use_click())
+  {
+    const vec2d_t old = player.pos;
+
+    const vec2d_t dir = vec2d_t::from(sinf(player.rotation), cosf(player.rotation));
+    player.pos = player.pos + (dir * PLAYER_STEP_SIZE);
+
+    if (world->get(player.pos.x, player.pos.y))
+    {
+      player.pos = old;
+    }
+  }
+
+  // encoder rotation rotates player
+  ui.encoderPosition = constrain(ui.encoderPosition, -1, 1);
+  player.rotation += ui.encoderPosition * PLAYER_ROTATION_SPEED;
+  ui.encoderPosition = 0;
+
+  // constrain rotation to [0, 2*PI)
+  while (player.rotation > 2 * PI)
+    player.rotation -= 2 * PI;
+  while (player.rotation < 0)
+    player.rotation += 2 * PI;
 }
 
 void MazeGame::draw_world(const world_t *world, const player_t &player)
@@ -86,7 +104,7 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
     const vec2d_t eye_dir = vec2d_t::from(sinf(eye_angle), cosf(eye_angle));
 
     // cast a ray from the player until it hits a wall or reaches the far clipping plane
-    float distance = 0.0f;
+    float distance = NEAR_CLIPPING_PLANE;
     bool hit = false;
     bool is_cell_corner = false;
     while(distance < FAR_CLIPPING_PLANE)
@@ -139,8 +157,7 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
 
     if (is_cell_corner)
     {
-      const game_dim_t h = _MIN(floor - ceiling, static_cast<game_dim_t>(RENDER_HEIGHT) - ceiling);
-      draw_vline(x, ceiling, h);
+      draw_vline(x, ceiling, (floor - ceiling) + 1);
     }
     else
     {

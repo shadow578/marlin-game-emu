@@ -72,10 +72,10 @@ public:
   };
 
 private:
+  static void update_player(const world_t *world, player_t &player);
 
   static void draw_world(const world_t *world, const player_t &player);
   static void draw_world_to_console(const world_t *world, const player_t &player);
-
 
   const static world_t WORLDS[1];
   inline static const world_t* get_world();
