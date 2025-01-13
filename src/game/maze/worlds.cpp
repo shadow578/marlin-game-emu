@@ -15,6 +15,12 @@ const MazeGame::world_t MazeGame::WORLDS[1] =
   {
     .data = WORLD1_DATA,
     .width = 16,
-    .height = 6
+    .height = 6,
+    .spawn_point = 
+    { 
+      .pos = { 1, 1 },
+      .rotation = 0
+    },
+    .exit_point = { 14, 4 }
   }
 };

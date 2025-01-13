@@ -35,8 +35,7 @@ void MazeGame::enter_game()
 
   // reset state
   STATE.world = 0;
-  STATE.player.pos = vec2d_t::from(2, 3);
-  STATE.player.rotation = 0;
+  load_world(get_world(), STATE.player);
 }
 
 void MazeGame::game_screen()
@@ -51,6 +50,19 @@ void MazeGame::game_screen()
   else if (game_state == GAME_STATE_RUNNING)
   {
     update_player(world, STATE.player);
+    if (check_world_exit(world, STATE.player))
+    {
+      STATE.world++;
+      if (STATE.world >= COUNT(WORLDS))
+      {
+        STATE.world--;
+        game_state = GAME_STATE_GAME_OVER;
+      }
+      else
+      {
+        load_world(world, STATE.player);
+      }
+    }
   }
 
   draw_world_to_console(world, STATE.player);
@@ -93,6 +105,20 @@ void MazeGame::update_player(const world_t *world, player_t &player)
     player.rotation -= 2 * PI;
   while (player.rotation < 0)
     player.rotation += 2 * PI;
+}
+
+void MazeGame::load_world(const world_t *world, player_t &player)
+{
+  player.pos = world->spawn_point.pos;
+  player.rotation = world->spawn_point.rotation;
+}
+
+bool MazeGame::check_world_exit(const world_t *world, const player_t &player)
+{
+  const float dx = player.pos.x - world->exit_point.x;
+  const float dy = player.pos.y - world->exit_point.y;
+
+  return (dx * dx + dy * dy < (0.1f));
 }
 
 void MazeGame::draw_world(const world_t *world, const player_t &player)

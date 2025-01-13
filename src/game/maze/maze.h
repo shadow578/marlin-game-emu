@@ -34,11 +34,19 @@ private:
     }
   };
 
+  struct player_t
+  {
+    vec2d_t pos;
+    float rotation; // rotation in radians
+  };
+
   struct world_t
   {
     const uint8_t *data;
     const uint8_t width; // must be multiple of 8
     const uint8_t height;
+    const player_t spawn_point;
+    const vec2d_t exit_point;
 
     bool is_in_bounds(const uint8_t x, const uint8_t y) const
     {
@@ -58,12 +66,6 @@ private:
     }
   };
 
-  struct player_t
-  {
-    vec2d_t pos;
-    float rotation; // rotation in radians
-  };
-
 public:
   struct state_t
   {
@@ -73,6 +75,9 @@ public:
 
 private:
   static void update_player(const world_t *world, player_t &player);
+
+  static void load_world(const world_t *world, player_t &player);
+  static bool check_world_exit(const world_t *world, const player_t &player);
 
   static void draw_world(const world_t *world, const player_t &player);
   static void draw_world_to_console(const world_t *world, const player_t &player);
