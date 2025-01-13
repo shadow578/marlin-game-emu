@@ -18,17 +18,6 @@ constexpr float RENDER_HEIGHT = GAME_HEIGHT;
 constexpr float PLAYER_STEP_SIZE = 0.1f;
 constexpr float PLAYER_ROTATION_SPEED = 0.05f;
 
-
-//inline float sinf(const float x)
-//{
-//  return sin(x);
-//}
-//
-//inline float cosf(const float x)
-//{
-//  return cos(x);
-//}
-
 inline bool equals_approx(const float n, const float m, const float epsilon)
 {
   return fabs(n - m) < epsilon;
@@ -72,8 +61,6 @@ void MazeGame::game_screen()
       STATE.player.rotation -= 2 * PI;
     while (STATE.player.rotation < 0)
       STATE.player.rotation += 2 * PI;
-
-    //std::cout << "pos=" << STATE.player.pos.x << " " << STATE.player.pos.y << " rot=" << STATE.player.rotation << std::endl;
   
     draw_world_to_console(get_world(), STATE.player);
   }
@@ -109,13 +96,7 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
       const vec2d_t pos = player.pos + (eye_dir * distance);
       const uint8_t cell_x = pos.x;
       const uint8_t cell_y = pos.y;
-
-      //std::cout << "ppos=" << PTOF(player.pos.x) << " " << PTOF(player.pos.y) << std::endl;
-      //std::cout << "ed=" << PTOF(eye_dir.x) << " " << PTOF(eye_dir.y) << std::endl;
-      //std::cout << "d=" << PTOF(distance) << " edist=" << PTOF(eye_distance.x) << " " << PTOF(eye_distance.y) << std::endl;
-      //std::cout << "d=" << PTOF(distance) << " px=" << PTOF(pos.x) << " py=" << PTOF(pos.y) << std::endl;
-      //std::cout << "cx=" << (int)cell_x << " cy=" << (int)cell_y << std::endl;
-
+      
       // ray out of bounds?
       if (!world->is_in_bounds(cell_x, cell_y)) break;
 
@@ -123,17 +104,6 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
       if (world->get(cell_x, cell_y))
       {
         hit = true;
-
-        // is the corner of a cell?
-        //is_cell_corner = equals_approx(
-        //  pos.x,
-        //  cell_x,
-        //  CELL_CORNER_EPSILON
-        //) && equals_approx(
-        //  pos.y,
-        //  cell_y,
-        //  CELL_CORNER_EPSILON
-        //);
 
         // calculate texture coordinates
         const vec2d_t mid = vec2d_t::from(cell_x + 0.5f, cell_y + 0.5f);
@@ -144,7 +114,6 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
         else if (a >= PI * 0.25f && a < PI * 0.75f) sx = pos.x - cell_x;
         else if (a >= PI * 0.75f || a < -PI * 0.75f) sx = pos.y - cell_y;
         else if (a >= -PI * 0.75f && a < -PI * 0.25f) sx = pos.x - cell_x;
-
 
         // is the corner of a cell?
         is_cell_corner = equals_approx(
@@ -168,10 +137,6 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
     const game_dim_t ceiling = _MAX(0, (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance));
     const game_dim_t floor = static_cast<game_dim_t>(RENDER_HEIGHT) - ceiling;
 
-
-    //std::cout << "d=" << PTOF(distance) << " x=" << (int)x << " cy=" << (int)ceiling_y << " fy=" << (int)floor_y << std::endl;
-
-
     if (is_cell_corner)
     {
       const game_dim_t h = _MIN(floor - ceiling, static_cast<game_dim_t>(RENDER_HEIGHT) - ceiling);
@@ -187,6 +152,7 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
 
 void MazeGame::draw_world_to_console(const world_t *world, const player_t &player)
 {
+
   for (int x = 0; x < world->width; x++)
   {
     for (int y = 0; y < world->height; y++)
@@ -210,7 +176,7 @@ void MazeGame::draw_world_to_console(const world_t *world, const player_t &playe
     std::cout << '\n';
   }
 
-  std::cout << std::endl;
+  std::cout << "pos=" << STATE.player.pos.x << " " << STATE.player.pos.y << " rot=" << STATE.player.rotation << std::endl;
 }
 
 const MazeGame::world_t* MazeGame::get_world()
