@@ -71,6 +71,8 @@ void MazeGame::game_screen()
         load_world(world, STATE.player);
       }
     }
+
+    update_entities(world, STATE.player, STATE.entities, COUNT(STATE.entities));
   }
 
   draw_to_console(world, STATE.player, STATE.entities, COUNT(STATE.entities));
@@ -118,6 +120,20 @@ void MazeGame::update_player(const world_t *world, player_t &player)
     player.rotation -= 2 * PI;
   while (player.rotation < 0)
     player.rotation += 2 * PI;
+}
+
+void MazeGame::update_entities(const world_t *world, const player_t &player, entity_t *entities, const uint8_t count)
+{
+  for (uint8_t i = 0; i < count; i++)
+  {
+    entity_t &entity = entities[i];
+    if (entity.type == entity_type::NONE) continue;
+
+    const auto behaviour = get_entity_info(entity.type)->behavior;
+    if (behaviour == nullptr) continue;
+
+    behaviour(world, player, entity);
+  }
 }
 
 void MazeGame::load_world(const world_t *world, player_t &player)

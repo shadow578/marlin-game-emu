@@ -9,7 +9,7 @@ public:
   static void enter_game();
   static void game_screen();
 
-private:
+public:
   struct vec2d_t
   {
     float x;
@@ -33,6 +33,14 @@ private:
       );
     }
 
+    vec2d_t operator/(const float scalar) const
+    {
+      return vec2d_t::from(
+        x / scalar,
+        y / scalar
+      );
+    }
+
     float magnitude_squared() const
     {
       return (x * x) + (y * y);
@@ -41,6 +49,11 @@ private:
     float magnitude() const
     {
       return sqrtf(magnitude_squared());
+    }
+
+    vec2d_t normalized() const
+    {
+      return *this / magnitude();
     }
 
     static vec2d_t from(const float x, const float y)
@@ -79,11 +92,6 @@ private:
     float rotation; // rotation in radians
   };
 
-  struct entity_info_t
-  {
-    const bitmap_t sprite;
-  };
-
   enum class entity_type
   {
     DUMMY,
@@ -103,7 +111,12 @@ private:
     const vec2d_t exit_point;
   };
 
-public:
+  struct entity_info_t
+  {
+    const bitmap_t sprite;
+    const void (*behavior)(const world_t *world, const player_t &player, entity_t &self);
+  };
+
   struct state_t
   {
     uint8_t world;
@@ -113,6 +126,7 @@ public:
 
 private:
   static void update_player(const world_t *world, player_t &player);
+  static void update_entities(const world_t *world, const player_t &player, entity_t *entities, const uint8_t count);
 
   static void load_world(const world_t *world, player_t &player);
   static bool check_world_exit(const world_t *world, const player_t &player);
