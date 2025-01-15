@@ -102,7 +102,7 @@ void MazeGame::update_player(const world_t *world, player_t &player)
     const vec2d_t dir = vec2d_t::from(sinf(player.rotation), cosf(player.rotation));
     player.pos = player.pos + (dir * PLAYER_STEP_SIZE);
 
-    if (world->get(player.pos.x, player.pos.y))
+    if (world->map.get(player.pos.x, player.pos.y))
     {
       player.pos = old;
     }
@@ -176,8 +176,8 @@ void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const play
     const float floor = RENDER_HEIGHT - ceiling;
 
     // determine entity size
-    const entity_sprite_t *sprite = get_entity_sprite(entity.type);
-    const float aspect = static_cast<float>(sprite->height) / static_cast<float>(sprite->width);
+    const bitmap_t &sprite = get_entity_info(entity.type)->sprite;
+    const float aspect = static_cast<float>(sprite.height) / static_cast<float>(sprite.width);
     const float entity_height = floor - ceiling;
     const float entity_width = entity_height / aspect;
 
@@ -200,9 +200,9 @@ void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const play
         if (depth_buffer[rx] < distance) continue;
 
         // sample the entity sprite
-        const float u = ex / entity_width;
-        const float v = ey / entity_height;
-        if (sprite->sample(u, v))
+        const uint8_t u = static_cast<uint8_t>((ex / entity_width) * sprite.width);
+        const uint8_t v = static_cast<uint8_t>((ey / entity_height) * sprite.height);
+        if (sprite.get(u, v))
         {
           draw_pixel(rx, ry);
           depth_buffer[rx] = distance;
@@ -233,10 +233,10 @@ void MazeGame::draw_world(const world_t *world, const player_t &player, float *d
       const uint8_t cell_y = pos.y;
       
       // ray out of bounds?
-      if (!world->is_in_bounds(cell_x, cell_y)) break;
+      if (!world->map.is_in_bounds(cell_x, cell_y)) break;
 
       // is a wall?
-      if (world->get(cell_x, cell_y))
+      if (world->map.get(cell_x, cell_y))
       {
         hit = true;
 
@@ -289,9 +289,9 @@ void MazeGame::draw_world(const world_t *world, const player_t &player, float *d
 
 void MazeGame::draw_to_console(const world_t *world, const player_t &player, const entity_t *entities, const uint8_t entity_count)
 {
-  for (int x = 0; x < world->width; x++)
+  for (int x = 0; x < world->map.width; x++)
   {
-    for (int y = 0; y < world->height; y++)
+    for (int y = 0; y < world->map.height; y++)
     {
       const entity_t *entity = nullptr;
       for (uint8_t i = 0; i < entity_count; i++)
@@ -316,7 +316,7 @@ void MazeGame::draw_to_console(const world_t *world, const player_t &player, con
       {
         std::cout << " " << static_cast<int>(entity->type) << "";
       }
-      else if (world->get(x, y))
+      else if (world->map.get(x, y))
       {
         std::cout << "███";
       }

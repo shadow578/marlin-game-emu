@@ -13,9 +13,12 @@ const uint8_t WORLD1_DATA[] PROGMEM =
 const MazeGame::world_t MazeGame::WORLDS[] =
 {
   {
-    .data = WORLD1_DATA,
-    .width = 16,
-    .height = 6,
+    .map =
+    {
+      .data = WORLD1_DATA,
+      .width = 16,
+      .height = 6
+    },
     .spawn_point = 
     { 
       .pos = { 1, 1 },
