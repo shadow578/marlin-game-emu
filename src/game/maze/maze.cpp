@@ -42,7 +42,7 @@ void MazeGame::enter_game()
   load_world(get_world(0), STATE.player);
 
   // TODO: place a entity in the world
-  STATE.entities[0].pos = { 3, 2 };
+  STATE.entities[0].pos = { 4, 3 };
   STATE.entities[0].type = entity_type::DUMMY;
 }
 
@@ -73,15 +73,17 @@ void MazeGame::game_screen()
     }
   }
 
-  draw_world_to_console(world, STATE.player);
+  draw_to_console(world, STATE.player, STATE.entities, COUNT(STATE.entities));
 
   frame_start();
 
+  float depth_buffer[static_cast<size_t>(RENDER_WIDTH)];
+
   set_color(color::BLUE);
-  draw_world(world, STATE.player);
+  draw_world(world, STATE.player, depth_buffer);
 
   set_color(color::RED);
-  draw_entities(STATE.entities, COUNT(STATE.entities), STATE.player);
+  draw_entities(STATE.entities, COUNT(STATE.entities), STATE.player, depth_buffer);
 
   draw_int(0, 0, STATE.player.pos.x);
   draw_int(0, GAME_FONT_ASCENT, STATE.player.pos.y);
@@ -132,7 +134,7 @@ bool MazeGame::check_world_exit(const world_t *world, const player_t &player)
   return (dx * dx + dy * dy < (0.1f));
 }
 
-void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const player_t &player)
+void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const player_t &player, float *depth_buffer)
 {
   // sort entities by distance to player
   for (uint8_t i = 0; i < count; ++i) {
@@ -170,7 +172,7 @@ void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const play
     if (fabs(angle) >= (PLAYER_FOV / 2.0f)) continue;
 
     // object is visible, let's draw it
-    const float ceiling = (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance);
+    const float ceiling = _MAX(0, (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance));
     const float floor = RENDER_HEIGHT - ceiling;
 
     // determine entity size
@@ -188,12 +190,14 @@ void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const play
       for (float ey = 0; ey < entity_height; ey++)
       {
         // determine screen coordinates
-        const float rx = RENDER_WIDTH - (entity_center + ex - (entity_width / 2.0f));
-        const float ry = ceiling + ey;
-        if (rx < 0 || rx >= RENDER_WIDTH) continue;
+        const float rxf = RENDER_WIDTH - (entity_center + ex - (entity_width / 2.0f));
+        if (rxf < 0 || rxf >= RENDER_WIDTH) continue;
+
+        const uint8_t rx = static_cast<uint8_t>(rxf);
+        const uint8_t ry = ceiling + ey;
 
         // check if this pixel is occluded
-        // TODO: if (depth_buffer[rx] < distance) continue;
+        if (depth_buffer[rx] < distance) continue;
 
         // sample the entity sprite
         const float u = ex / entity_width;
@@ -201,16 +205,16 @@ void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const play
         if (sprite->sample(u, v))
         {
           draw_pixel(rx, ry);
-          // TODO: depth_buffer[rx] = distance;
+          depth_buffer[rx] = distance;
         }
       }
     }
   }
 }
 
-void MazeGame::draw_world(const world_t *world, const player_t &player)
+void MazeGame::draw_world(const world_t *world, const player_t &player, float *depth_buffer)
 {
-  for(uint8_t x = 0; x < GAME_WIDTH; x++)
+  for(uint8_t x = 0; x < RENDER_WIDTH; x++)
   {
     // calculate ray projection angle
     const float eye_angle = (player.rotation - (PLAYER_FOV / 2.0f)) + (static_cast<float>(x) / RENDER_WIDTH) * PLAYER_FOV;
@@ -264,7 +268,8 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
     // had a hit?
     if (!hit) continue;
 
-    // TODO: depth_buffer[x] = distance;
+    // record wall in depth buffer
+    depth_buffer[x] = distance;
 
     // calculate wall start and end points
     const game_dim_t ceiling = _MAX(0, (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance));
@@ -282,18 +287,34 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
   }
 }
 
-void MazeGame::draw_world_to_console(const world_t *world, const player_t &player)
+void MazeGame::draw_to_console(const world_t *world, const player_t &player, const entity_t *entities, const uint8_t entity_count)
 {
-
   for (int x = 0; x < world->width; x++)
   {
     for (int y = 0; y < world->height; y++)
     {
+      const entity_t *entity = nullptr;
+      for (uint8_t i = 0; i < entity_count; i++)
+      {
+        const entity_t *e = &entities[i];
+        if (e->type == entity_type::NONE) continue;
+
+        if (x == (int)e->pos.x && y == (int)e->pos.y)
+        {
+          entity = e;
+          break;
+        }
+      }
+
       if (x == (int)player.pos.x && y == (int)player.pos.y)
       {
         const char* c[] = { "↘", "↓", "↙", "←", "↖", "↑", "↗", "→" };
         int rot = static_cast<int>((player.rotation / (2 * PI)) * COUNT(c)) % COUNT(c);
         std::cout << " " << c[rot] << " ";
+      }
+      else if (entity != nullptr)
+      {
+        std::cout << " " << static_cast<int>(entity->type) << "";
       }
       else if (world->get(x, y))
       {

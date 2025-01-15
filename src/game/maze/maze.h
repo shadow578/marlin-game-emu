@@ -134,9 +134,10 @@ private:
   static void load_world(const world_t *world, player_t &player);
   static bool check_world_exit(const world_t *world, const player_t &player);
 
-  static void draw_entities(entity_t *entities, const uint8_t count, const player_t &player);
-  static void draw_world(const world_t *world, const player_t &player);
-  static void draw_world_to_console(const world_t *world, const player_t &player);
+  static void draw_entities(entity_t *entities, const uint8_t count, const player_t &player, float *depth_buffer);
+  static void draw_world(const world_t *world, const player_t &player, float *depth_buffer);
+  
+  static void draw_to_console(const world_t *world, const player_t &player, const entity_t *entities, const uint8_t entity_count);
 
   const static world_t WORLDS[1];
   static const world_t* get_world(const uint8_t id);
