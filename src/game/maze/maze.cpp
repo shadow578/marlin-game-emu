@@ -33,14 +33,22 @@ void MazeGame::enter_game()
 {
   init_game(GAME_STATE_RUNNING, game_screen);
 
-  // reset state
+  for (auto &entity : STATE.entities)
+  {
+    entity.type = entity_type::NONE;
+  }
+
   STATE.world = 0;
-  load_world(get_world(), STATE.player);
+  load_world(get_world(0), STATE.player);
+
+  // TODO: place a entity in the world
+  STATE.entities[0].pos = { 3, 2 };
+  STATE.entities[0].type = entity_type::DUMMY;
 }
 
 void MazeGame::game_screen()
 {
-  const world_t *world = get_world();
+  const world_t *world = get_world(STATE.world);
 
   if (game_state == GAME_STATE_GAME_OVER)
   {
@@ -71,6 +79,9 @@ void MazeGame::game_screen()
 
   set_color(color::BLUE);
   draw_world(world, STATE.player);
+
+  set_color(color::RED);
+  draw_entities(STATE.entities, COUNT(STATE.entities), STATE.player);
 
   draw_int(0, 0, STATE.player.pos.x);
   draw_int(0, GAME_FONT_ASCENT, STATE.player.pos.y);
@@ -119,6 +130,82 @@ bool MazeGame::check_world_exit(const world_t *world, const player_t &player)
   const float dy = player.pos.y - world->exit_point.y;
 
   return (dx * dx + dy * dy < (0.1f));
+}
+
+void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const player_t &player)
+{
+  // sort entities by distance to player
+  for (uint8_t i = 0; i < count; ++i) {
+    for (uint8_t j = i + 1; j < count; ++j) {
+      const float mag_i = (player.pos - entities[i].pos).magnitude_squared();
+      const float mag_j = (player.pos - entities[j].pos).magnitude_squared();
+      if (mag_i < mag_j) {
+        std::swap(entities[i], entities[j]);
+      }
+    }
+  }
+
+  // pre-calculate reusable values for all entities
+  const vec2d_t player_view_dir = vec2d_t::from(sinf(player.rotation), cosf(player.rotation));
+  const float player_view_angle = atan2f(player_view_dir.y, player_view_dir.x);
+
+  // render each entity
+  for (uint8_t i = 0; i < count; ++i) {
+    const entity_t& entity = entities[i];
+
+    // is entity active?
+    if (entity.type == entity_type::NONE) continue;
+
+    // check if entity is within draw distance
+    const vec2d_t to_player = entity.pos - player.pos;
+    const float distance = to_player.magnitude();
+    if (distance > FAR_CLIPPING_PLANE || distance < NEAR_CLIPPING_PLANE) continue;
+
+    // check if entity is in player's view cone
+    const float entity_angle = atan2f(to_player.y, to_player.x);
+    float angle = entity_angle - player_view_angle;
+    if (angle < -PI) angle += 2.0f * PI;
+    if (angle > PI) angle -= 2.0f * PI;
+
+    if (fabs(angle) >= (PLAYER_FOV / 2.0f)) continue;
+
+    // object is visible, let's draw it
+    const float ceiling = (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance);
+    const float floor = RENDER_HEIGHT - ceiling;
+
+    // determine entity size
+    const entity_sprite_t *sprite = get_entity_sprite(entity.type);
+    const float aspect = static_cast<float>(sprite->height) / static_cast<float>(sprite->width);
+    const float entity_height = floor - ceiling;
+    const float entity_width = entity_height / aspect;
+
+    // determine entity center point
+    const float entity_center = (0.5f * (angle / (PLAYER_FOV / 2.0f)) + 0.5f) * RENDER_WIDTH;
+
+    // now draw the entity
+    for (float ex = 0; ex < entity_width; ex++)
+    {
+      for (float ey = 0; ey < entity_height; ey++)
+      {
+        // determine screen coordinates
+        const float rx = RENDER_WIDTH - (entity_center + ex - (entity_width / 2.0f));
+        const float ry = ceiling + ey;
+        if (rx < 0 || rx >= RENDER_WIDTH) continue;
+
+        // check if this pixel is occluded
+        // TODO: if (depth_buffer[rx] < distance) continue;
+
+        // sample the entity sprite
+        const float u = ex / entity_width;
+        const float v = ey / entity_height;
+        if (sprite->sample(u, v))
+        {
+          draw_pixel(rx, ry);
+          // TODO: depth_buffer[rx] = distance;
+        }
+      }
+    }
+  }
 }
 
 void MazeGame::draw_world(const world_t *world, const player_t &player)
@@ -177,6 +264,8 @@ void MazeGame::draw_world(const world_t *world, const player_t &player)
     // had a hit?
     if (!hit) continue;
 
+    // TODO: depth_buffer[x] = distance;
+
     // calculate wall start and end points
     const game_dim_t ceiling = _MAX(0, (RENDER_HEIGHT / 2.0f) - (RENDER_HEIGHT / distance));
     const game_dim_t floor = static_cast<game_dim_t>(RENDER_HEIGHT) - ceiling;
@@ -220,11 +309,6 @@ void MazeGame::draw_world_to_console(const world_t *world, const player_t &playe
   }
 
   std::cout << "pos=" << STATE.player.pos.x << " " << STATE.player.pos.y << " rot=" << STATE.player.rotation << std::endl;
-}
-
-const MazeGame::world_t* MazeGame::get_world()
-{
-  return &WORLDS[STATE.world];
 }
 
 #endif // MARLIN_DINO

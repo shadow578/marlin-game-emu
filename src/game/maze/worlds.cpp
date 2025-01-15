@@ -10,7 +10,7 @@ const uint8_t WORLD1_DATA[] PROGMEM =
   0b11111111, 0b11111111,
 };
 
-const MazeGame::world_t MazeGame::WORLDS[1] =
+const MazeGame::world_t MazeGame::WORLDS[] =
 {
   {
     .data = WORLD1_DATA,
@@ -24,3 +24,8 @@ const MazeGame::world_t MazeGame::WORLDS[1] =
     .exit_point = { 14, 4 }
   }
 };
+
+const MazeGame::world_t* MazeGame::get_world(const uint8_t id)
+{
+  return &WORLDS[id];
+}
