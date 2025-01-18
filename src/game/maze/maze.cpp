@@ -38,8 +38,13 @@ void MazeGame::enter_game()
     entity.type = entity_type::NONE;
   }
 
-  STATE.world = 0;
-  load_world(get_world(0), STATE.player);
+  const world_loading_zone_t init_zone = {
+    .x = 0, 
+    .y = 0,
+    .target_world = 0, 
+    .target_zone = 0
+  };
+  load_world(init_zone, STATE.player); // start in world 0, at loading zone 0
 
   // TODO: place a entity in the world
   STATE.entities[0].pos = { 4, 3 };
@@ -57,25 +62,26 @@ void MazeGame::game_screen()
   }
   else if (game_state == GAME_STATE_RUNNING)
   {
-    update_player(world, STATE.player);
-    if (check_world_exit(world, STATE.player))
+    world_loading_zone_t next_zone;
+    if (check_loading_zone(world, STATE.player, next_zone))
     {
-      STATE.world++;
-      if (STATE.world >= COUNT(WORLDS))
+      // entered a loading zone, load next world
+      // unless this zone is a game exit
+      if (next_zone.flags.is_game_exit)
       {
-        STATE.world--;
         game_state = GAME_STATE_GAME_OVER;
       }
       else
       {
-        load_world(world, STATE.player);
+        world = load_world(next_zone, STATE.player);
       }
     }
 
+    update_player(world, STATE.player);
     update_entities(world, STATE.player, STATE.entities, COUNT(STATE.entities));
   }
 
-  draw_to_console(world, STATE.player, STATE.entities, COUNT(STATE.entities));
+  //draw_to_console(world, STATE.player, STATE.entities, COUNT(STATE.entities));
 
   frame_start();
 
@@ -92,6 +98,49 @@ void MazeGame::game_screen()
   draw_int(0, GAME_FONT_ASCENT*2, STATE.player.rotation);
 
   frame_end();
+}
+
+const MazeGame::world_t* MazeGame::load_world(const world_loading_zone_t &zone, player_t &player)
+{
+  std::cout << "loading world " << (int)zone.target_world << " zone " << (int)zone.target_zone << std::endl;
+
+  assert(zone.target_world < COUNT(WORLDS));
+  STATE.world = zone.target_world;
+  const world_t *world = get_world(STATE.world);
+
+  assert(zone.target_zone < world->loading_zone_count);
+  const world_loading_zone_t lz = world->loading_zones[zone.target_zone];
+
+  const float x_frac = player.pos.x - static_cast<int>(player.pos.x);
+  const float y_frac = player.pos.y - static_cast<int>(player.pos.y);
+
+  player.pos = vec2d_t::from(lz.x + x_frac, lz.y + y_frac);
+  if (!lz.flags.reset_rotation)
+  {
+    player.rotation = 0;
+  }
+
+  return world;
+}
+
+bool MazeGame::check_loading_zone(const world_t *world, const player_t &player, world_loading_zone_t &zone)
+{
+  for (uint8_t i = 0; i < world->loading_zone_count; i++)
+  {
+    const world_loading_zone_t &lz = world->loading_zones[i];
+    if (lz.flags.can_warp == false) continue;
+
+    const vec2d_t target = vec2d_t::from(lz.x + 0.5f, lz.y + 0.5f);
+    const float distance = (player.pos - target).magnitude_squared();
+
+    if (distance < 0.75f)
+    {
+      zone = lz;
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 void MazeGame::update_player(const world_t *world, player_t &player)
@@ -134,20 +183,6 @@ void MazeGame::update_entities(const world_t *world, const player_t &player, ent
 
     behaviour(world, player, entity);
   }
-}
-
-void MazeGame::load_world(const world_t *world, player_t &player)
-{
-  player.pos = world->spawn_point.pos;
-  player.rotation = world->spawn_point.rotation;
-}
-
-bool MazeGame::check_world_exit(const world_t *world, const player_t &player)
-{
-  const float dx = player.pos.x - world->exit_point.x;
-  const float dy = player.pos.y - world->exit_point.y;
-
-  return (dx * dx + dy * dy < (0.1f));
 }
 
 void MazeGame::draw_entities(entity_t *entities, const uint8_t count, const player_t &player, float *depth_buffer)

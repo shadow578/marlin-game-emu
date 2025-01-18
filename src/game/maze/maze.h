@@ -104,11 +104,37 @@ public:
     entity_type type;
   };
 
+  struct world_loading_zone_t
+  {
+    // position of this zone
+    uint8_t x;
+    uint8_t y;
+
+    // target loading zone to warp to
+    uint8_t target_world;
+    uint8_t target_zone;
+
+    struct
+    {
+      // does this zone warp the player on entry?
+      // if false, this is only a target for another zone
+      bool can_warp : 1;
+
+      // preserve player rotation
+      // if true, player rotation is reset to 0
+      bool reset_rotation : 1;
+
+      // does this zone trigger game end?
+      // only valid if can_warp is true
+      bool is_game_exit : 1;
+    } flags;
+  };
+
   struct world_t
   {
     const bitmap_t map;
-    const player_t spawn_point;
-    const vec2d_t exit_point;
+    const world_loading_zone_t *loading_zones;
+    const uint8_t loading_zone_count;
   };
 
   struct entity_info_t
@@ -125,18 +151,18 @@ public:
   };
 
 private:
+  static const world_t* load_world(const world_loading_zone_t &zone, player_t &player);
+  static bool check_loading_zone(const world_t *world, const player_t &player, world_loading_zone_t &zone);
+
   static void update_player(const world_t *world, player_t &player);
   static void update_entities(const world_t *world, const player_t &player, entity_t *entities, const uint8_t count);
-
-  static void load_world(const world_t *world, player_t &player);
-  static bool check_world_exit(const world_t *world, const player_t &player);
 
   static void draw_entities(entity_t *entities, const uint8_t count, const player_t &player, float *depth_buffer);
   static void draw_world(const world_t *world, const player_t &player, float *depth_buffer);
   
   static void draw_to_console(const world_t *world, const player_t &player, const entity_t *entities, const uint8_t entity_count);
 
-  const static world_t WORLDS[1];
+  const static world_t WORLDS[2];
   static const world_t* get_world(const uint8_t id);
 
   const static entity_info_t ENTITIES[static_cast<size_t>(entity_type::NONE)];
