@@ -111,6 +111,7 @@ public:
     uint8_t y;
 
     // target loading zone to warp to
+    // only used when flags.can_warp is true
     uint8_t target_world;
     uint8_t target_zone;
 
@@ -120,9 +121,12 @@ public:
       // if false, this is only a target for another zone
       bool can_warp : 1;
 
-      // preserve player rotation
-      // if true, player rotation is reset to 0
-      bool reset_rotation : 1;
+      // update player rotation on warp
+      // - 0: don't update rotation
+      // - 1: add 90 degrees
+      // - 2: add 180 degrees
+      // - 3: add -90 degrees
+      uint8_t update_rotation : 2;
 
       // does this zone trigger game end?
       // only valid if can_warp is true

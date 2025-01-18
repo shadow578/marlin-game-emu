@@ -109,15 +109,28 @@ const MazeGame::world_t* MazeGame::load_world(const world_loading_zone_t &zone, 
   const world_t *world = get_world(STATE.world);
 
   assert(zone.target_zone < world->loading_zone_count);
-  const world_loading_zone_t lz = world->loading_zones[zone.target_zone];
+  const world_loading_zone_t target = world->loading_zones[zone.target_zone];
 
+  // aply position from target zone
   const float x_frac = player.pos.x - static_cast<int>(player.pos.x);
   const float y_frac = player.pos.y - static_cast<int>(player.pos.y);
+  player.pos = vec2d_t::from(target.x + x_frac, target.y + y_frac);
 
-  player.pos = vec2d_t::from(lz.x + x_frac, lz.y + y_frac);
-  if (!lz.flags.reset_rotation)
+  // apply rotation from source zone
+  if (zone.flags.update_rotation == 1)
   {
-    player.rotation = 0;
+    // +90 degrees
+    player.rotation += PI / 2;
+  }
+  else if (zone.flags.update_rotation == 2)
+  {
+    // +180 degrees
+    player.rotation += PI;
+  }
+  else if (zone.flags.update_rotation == 3)
+  {
+    // -90 degrees
+    player.rotation -= PI / 2;
   }
 
   return world;

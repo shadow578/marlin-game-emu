@@ -15,12 +15,6 @@ const MazeGame::world_loading_zone_t WORLD1_LOADING_ZONES[] PROGMEM =
   { // 0: SPAWN
     .x = 1,
     .y = 1,
-    .target_world = 0,
-    .target_zone = 0,
-    .flags = 
-    {
-      .can_warp = false,
-    }
   },
   { // 1: to world 2
     .x = 14,
@@ -35,12 +29,6 @@ const MazeGame::world_loading_zone_t WORLD1_LOADING_ZONES[] PROGMEM =
   { // 2: return from world 2
     .x = 14,
     .y = 3,
-    .target_world = 0,
-    .target_zone = 0,
-    .flags =
-    {
-      .can_warp = false,
-    }
   }
 };
 
@@ -58,12 +46,6 @@ const MazeGame::world_loading_zone_t WORLD2_LOADING_ZONES[] PROGMEM =
   { // 0: Entry from world 1
     .x = 1,
     .y = 1,
-    .target_world = 0,
-    .target_zone = 0,
-    .flags =
-    {
-      .can_warp = false,
-    }
   },
   { // 1: Warp back to world 1
     .x = 4,
@@ -73,6 +55,7 @@ const MazeGame::world_loading_zone_t WORLD2_LOADING_ZONES[] PROGMEM =
     .flags =
     {
       .can_warp = true,
+      .update_rotation = 3, // -90
     }
   }
 };
